@@ -1,0 +1,16 @@
+{
+  "name": "joshuakrizek-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Static site for joshuakrizek.com — content sourced from a Notion database (headless CMS).",
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@notionhq/client": "^2.2.15"
+  }
+}
