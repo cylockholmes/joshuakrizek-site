@@ -27,8 +27,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-      - run: npm ci
+      - run: npm install
       - name: Build site from Notion
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
@@ -48,4 +47,3 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
-
