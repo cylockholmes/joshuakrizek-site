@@ -4,7 +4,7 @@
 // You edit posts in Notion; GitHub Actions re-runs this build and redeploys.
 
 import { mkdir, writeFile, cp, rm } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -32,6 +32,9 @@ const SITE = {
 // Notion client is created lazily in main() so the render helpers can be
 // imported and tested without the @notionhq/client dependency installed.
 let notion;
+
+// Inline the stylesheet so pages never depend on a separately-served asset.
+const CSS = readFileSync(path.join(ROOT, "src", "styles.css"), "utf8");
 
 // ---- Helpers ----------------------------------------------------------------
 const esc = (s = "") =>
@@ -179,8 +182,7 @@ const head = (title, desc) => `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc || SITE.tagline)}"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="stylesheet" href="/assets/styles.css"/>
+<style>${CSS}</style>
 </head>
 <body>`;
 
