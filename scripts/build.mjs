@@ -134,10 +134,16 @@ function blocksToHtml(blocks) {
         break;
       }
       case "code": {
-        const lang = esc(b.code.language || "");
-        html += `<pre class="code" data-lang="${lang}"><code>${esc(
-          plain(b.code.rich_text)
-        )}</code></pre>\n`;
+        const language = (b.code.language || "").toLowerCase();
+        const raw = plain(b.code.rich_text);
+        if (language === "mermaid") {
+          // Rendered client-side by Mermaid.js (see mermaidScript below).
+          html += `<pre class="mermaid">${esc(raw)}</pre>\n`;
+        } else {
+          html += `<pre class="code" data-lang="${esc(
+            language
+          )}"><code>${esc(raw)}</code></pre>\n`;
+        }
         break;
       }
       case "quote":
@@ -205,6 +211,12 @@ const footer = `<footer class="site-footer">
 </footer>
 </body></html>`;
 
+// Loaded only on pages that contain a Mermaid diagram.
+const mermaidScript = `<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" });
+</script>`;
+
 function postCard(p) {
   const tags = p.tags
     .map((t) => `<span class="tag">${esc(t)}</span>`)
@@ -263,6 +275,7 @@ ${header}
       : ""
   }
 </main>
+${p.body.includes('class="mermaid"') ? mermaidScript : ""}
 ${footer}`;
 }
 
