@@ -90,6 +90,10 @@ async function fetchBlocks(blockId) {
     blocks.push(...res.results);
     cursor = res.has_more ? res.next_cursor : undefined;
   } while (cursor);
+  // Recurse into nested blocks (columns, toggles, …) so their content renders.
+  for (const b of blocks) {
+    if (b.has_children) b.children = await fetchBlocks(b.id);
+  }
   return blocks;
 }
 
@@ -170,6 +174,11 @@ function blocksToHtml(blocks) {
         html += `<p><input type="checkbox" disabled ${
           b.to_do.checked ? "checked" : ""
         }/> ${richText(b.to_do.rich_text)}</p>\n`;
+        break;
+      case "column_list":
+        html += `<div class="columns">${(b.children || [])
+          .map((col) => `<div class="col">${blocksToHtml(col.children || [])}</div>`)
+          .join("")}</div>\n`;
         break;
       default:
         // Unsupported block types are skipped silently.
@@ -323,31 +332,38 @@ function guessExt(contentType, url) {
   return m ? m[1].toLowerCase() : "png";
 }
 
-async function localizeImages(blocks, slug) {
-  let n = 0;
+async function localizeImages(blocks, slug, counter = { n: 0 }) {
   for (const b of blocks) {
-    if (b.type !== "image" || !b.image || b.image.type !== "file") continue;
-    const src = b.image.file?.url;
-    if (!src) continue;
-    try {
-      const res = await fetch(src);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const buf = Buffer.from(await res.arrayBuffer());
-      const name = `${slug}-${++n}.${guessExt(
-        res.headers.get("content-type"),
-        src
-      )}`;
-      await writeFile(path.join(DIST, "images", name), buf);
-      // Rewrite the block so blocksToHtml emits a stable, self-hosted path.
-      b.image = {
-        type: "external",
-        external: { url: `/images/${name}` },
-        caption: b.image.caption || [],
-      };
-      console.log(`    \u21b3 saved image /images/${name}`);
-    } catch (err) {
-      console.warn(`    ! could not fetch a Notion image for ${slug}: ${err.message}`);
+    if (b.type === "image" && b.image?.type === "file" && b.image.file?.url) {
+      const src = b.image.file.url;
+      try {
+        const res = await fetch(src);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        let buf = Buffer.from(await res.arrayBuffer());
+        let ext = guessExt(res.headers.get("content-type"), src);
+        // Browsers can't display HEIC/HEIF (common from iPhones) — convert to JPEG.
+        if (ext === "heic" || ext === "heif") {
+          const heicConvert = (await import("heic-convert")).default;
+          buf = Buffer.from(
+            await heicConvert({ buffer: buf, format: "JPEG", quality: 0.9 })
+          );
+          ext = "jpg";
+        }
+        const name = `${slug}-${++counter.n}.${ext}`;
+        await writeFile(path.join(DIST, "images", name), buf);
+        // Rewrite the block so blocksToHtml emits a stable, self-hosted path.
+        b.image = {
+          type: "external",
+          external: { url: `/images/${name}` },
+          caption: b.image.caption || [],
+        };
+        console.log(`    \u21b3 saved image /images/${name}`);
+      } catch (err) {
+        console.warn(`    ! could not fetch a Notion image for ${slug}: ${err.message}`);
+      }
     }
+    // Recurse into nested content (e.g. images inside column layouts).
+    if (b.children) await localizeImages(b.children, slug, counter);
   }
 }
 
