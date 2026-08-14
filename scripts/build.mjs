@@ -301,6 +301,56 @@ ${header}
 ${footer}`;
 }
 
+// Notion-hosted images (uploaded straight into a post) are served from
+// temporary signed URLs that expire within ~an hour, so embedding them in a
+// static site breaks fast. Download them at build time and serve them from the
+// site instead. Images added by external URL (GitHub, giphy, …) are left alone.
+const EXT_BY_TYPE = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/gif": "gif",
+  "image/webp": "webp",
+  "image/svg+xml": "svg",
+  "image/avif": "avif",
+  "image/bmp": "bmp",
+};
+
+function guessExt(contentType, url) {
+  const ct = (contentType || "").split(";")[0].trim().toLowerCase();
+  if (EXT_BY_TYPE[ct]) return EXT_BY_TYPE[ct];
+  const m = (url || "").split("?")[0].match(/\.([a-z0-9]{2,5})$/i);
+  return m ? m[1].toLowerCase() : "png";
+}
+
+async function localizeImages(blocks, slug) {
+  let n = 0;
+  for (const b of blocks) {
+    if (b.type !== "image" || !b.image || b.image.type !== "file") continue;
+    const src = b.image.file?.url;
+    if (!src) continue;
+    try {
+      const res = await fetch(src);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const buf = Buffer.from(await res.arrayBuffer());
+      const name = `${slug}-${++n}.${guessExt(
+        res.headers.get("content-type"),
+        src
+      )}`;
+      await writeFile(path.join(DIST, "images", name), buf);
+      // Rewrite the block so blocksToHtml emits a stable, self-hosted path.
+      b.image = {
+        type: "external",
+        external: { url: `/images/${name}` },
+        caption: b.image.caption || [],
+      };
+      console.log(`    \u21b3 saved image /images/${name}`);
+    } catch (err) {
+      console.warn(`    ! could not fetch a Notion image for ${slug}: ${err.message}`);
+    }
+  }
+}
+
 // ---- Main -------------------------------------------------------------------
 async function queryPublishedPosts() {
   const pages = [];
@@ -353,19 +403,21 @@ async function main() {
   const pages = await queryPublishedPosts();
   console.log(`Found ${pages.length} published post(s).`);
 
+  // Clean + recreate dist up front so images can be downloaded into it.
+  if (existsSync(DIST)) await rm(DIST, { recursive: true, force: true });
+  await mkdir(path.join(DIST, "posts"), { recursive: true });
+  await mkdir(path.join(DIST, "assets"), { recursive: true });
+  await mkdir(path.join(DIST, "images"), { recursive: true });
+
   const posts = [];
   for (const page of pages) {
     const meta = readProps(page);
     const blocks = await fetchBlocks(page.id);
+    await localizeImages(blocks, meta.slug);
     const body = blocksToHtml(blocks);
     posts.push({ ...meta, body });
-    console.log(`  • ${meta.title} (${meta.slug})`);
+    console.log(`  \u2022 ${meta.title} (${meta.slug})`);
   }
-
-  // Clean + recreate dist
-  if (existsSync(DIST)) await rm(DIST, { recursive: true, force: true });
-  await mkdir(path.join(DIST, "posts"), { recursive: true });
-  await mkdir(path.join(DIST, "assets"), { recursive: true });
 
   // Assets
   await cp(
@@ -389,7 +441,7 @@ async function main() {
 }
 
 // Render helpers are exported so the build can be unit-tested without Notion.
-export { blocksToHtml, richText, indexPage, postPage, aboutPage, readProps, slugify };
+export { blocksToHtml, richText, indexPage, postPage, aboutPage, readProps, slugify, localizeImages, guessExt };
 
 // Only hit the Notion API when run directly (node scripts/build.mjs).
 const invokedDirectly =
