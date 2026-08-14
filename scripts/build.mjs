@@ -205,6 +205,7 @@ const header = `<header class="site-header">
   <a class="brand" href="/">${esc(SITE.name)}<span class="cursor">_</span></a>
   <nav>
     <a href="/">Home</a>
+    <a href="/services.html">Services</a>
     <a href="/about.html">About</a>
     <a href="${SITE.github}" rel="noopener">GitHub</a>
     <a href="${SITE.linkedin}" rel="noopener">LinkedIn</a>
@@ -306,6 +307,55 @@ ${header}
        on <a href="${SITE.github}" rel="noopener">GitHub</a> and
        <a href="${SITE.linkedin}" rel="noopener">LinkedIn</a>.</p>
   </article>
+</main>
+${footer}`;
+}
+
+function servicesPage() {
+  const svc = (title, desc) =>
+    `<div class="card"><div class="svc"><h3>${title}</h3><p>${desc}</p></div></div>`;
+  return `${head(
+    `Services · ${SITE.name}`,
+    "Offensive and defensive security services — penetration testing (external, internal, physical) and blue team assessments and consulting."
+  )}
+${header}
+<main class="post services">
+  <a class="back" href="/">&larr; Home</a>
+  <h1>Services</h1>
+  <p class="intro">Offensive and defensive security work for organizations that want to find their weak spots before someone else does. Every engagement starts with a scoping conversation and ends with a clear, prioritized report — what's exposed, how it was exploited, and exactly how to fix it.</p>
+
+  <h2 class="section-title">Penetration Testing</h2>
+  <div class="grid">
+    ${svc(
+      "External Penetration Testing",
+      "A remote attacker's view of your internet-facing footprint — perimeter services, web apps, email, VPNs, and exposed assets. I map the ways in from the outside and demonstrate real-world impact."
+    )}
+    ${svc(
+      "Internal Penetration Testing",
+      "Assumed-breach testing from inside the network: privilege escalation, lateral movement, Active Directory attacks, and the path from a single foothold to full domain compromise."
+    )}
+    ${svc(
+      "Physical Penetration Testing",
+      "On-site assessment of your physical controls — badge cloning, tailgating, lock bypass, and social engineering — to see how far someone could get past the front door."
+    )}
+  </div>
+
+  <h2 class="section-title">Blue Team &amp; Consulting</h2>
+  <div class="grid">
+    ${svc(
+      "Blue Team Security Assessments",
+      "A defender-focused review of your detection and response: logging and visibility, alerting, endpoint and network hardening, and how your controls hold up against real attacker techniques (mapped to MITRE ATT&amp;CK)."
+    )}
+    ${svc(
+      "Security Consulting",
+      "Advisory work to build and mature your security program — risk assessments, remediation roadmaps, architecture and policy review, and guidance you can actually act on."
+    )}
+  </div>
+
+  <div class="callout cta">
+    <p><strong>Ready to talk scope?</strong> Engagements are tailored to your environment, goals, and rules of engagement.</p>
+    <a class="btn" href="mailto:${SITE.email}?subject=Security%20services%20inquiry">Get in touch &rarr;</a>
+  </div>
 </main>
 ${footer}`;
 }
@@ -467,6 +517,7 @@ async function main() {
   // Pages
   await writeFile(path.join(DIST, "index.html"), indexPage(posts));
   await writeFile(path.join(DIST, "about.html"), aboutPage());
+  await writeFile(path.join(DIST, "services.html"), servicesPage());
   for (const p of posts) {
     await writeFile(path.join(DIST, "posts", `${p.slug}.html`), postPage(p));
   }
@@ -475,7 +526,7 @@ async function main() {
 }
 
 // Render helpers are exported so the build can be unit-tested without Notion.
-export { blocksToHtml, richText, indexPage, postPage, aboutPage, readProps, slugify, localizeImages, guessExt };
+export { blocksToHtml, richText, indexPage, postPage, aboutPage, servicesPage, readProps, slugify, localizeImages, guessExt };
 
 // Only hit the Notion API when run directly (node scripts/build.mjs).
 const invokedDirectly =
