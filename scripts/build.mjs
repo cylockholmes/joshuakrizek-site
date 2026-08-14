@@ -298,7 +298,7 @@ ${header}
   <article class="post-body">
     <p>Hey! I'm <strong>${esc(
       SITE.name
-    )}</strong> — an aspiring ethical hacker.</p>
+    )}</strong> — a cybersecurity and IT professional.</p>
     <p>This site is where I document what I learn as I work through HackTheBox
        and TCM PEH machines, build out my pentesting toolkit, and write up the
        occasional security story. My focus right now is offensive security and
