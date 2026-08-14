@@ -314,6 +314,7 @@ ${footer}`;
 // temporary signed URLs that expire within ~an hour, so embedding them in a
 // static site breaks fast. Download them at build time and serve them from the
 // site instead. Images added by external URL (GitHub, giphy, …) are left alone.
+const MAX_IMAGE_WIDTH = 1600;
 const EXT_BY_TYPE = {
   "image/png": "png",
   "image/jpeg": "jpg",
@@ -348,6 +349,23 @@ async function localizeImages(blocks, slug, counter = { n: 0 }) {
             await heicConvert({ buffer: buf, format: "JPEG", quality: 0.9 })
           );
           ext = "jpg";
+        }
+        // Downscale oversized photos, re-compress, and strip EXIF/GPS metadata.
+        if (["jpg", "png", "webp"].includes(ext)) {
+          try {
+            const sharp = (await import("sharp")).default;
+            let img = sharp(buf, { failOn: "none" }).rotate();
+            const meta = await img.metadata();
+            if (meta.width && meta.width > MAX_IMAGE_WIDTH) {
+              img = img.resize({ width: MAX_IMAGE_WIDTH });
+            }
+            if (ext === "jpg") img = img.jpeg({ quality: 82, mozjpeg: true });
+            else if (ext === "png") img = img.png({ compressionLevel: 9 });
+            else img = img.webp({ quality: 82 });
+            buf = await img.toBuffer();
+          } catch (err) {
+            console.warn(`    ! image optimize skipped: ${err.message}`);
+          }
         }
         const name = `${slug}-${++counter.n}.${ext}`;
         await writeFile(path.join(DIST, "images", name), buf);
