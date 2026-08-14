@@ -20,7 +20,7 @@ const DATABASE_ID =
 
 const SITE = {
   name: "Joshua Krizek",
-  tagline: "Aspiring ethical hacker",
+  tagline: "Cybersecurity and IT professional",
   intro:
     "Write-ups and walkthroughs from my journey into offensive security — HackTheBox and TCM PEH machines, tooling guides, and the occasional security war story.",
   email: "hello@joshuakrizek.com",
