@@ -11,6 +11,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@notionhq/client": "^2.2.15"
+    "@notionhq/client": "^2.2.15",
+    "heic-convert": "^2.1.0"
   }
 }
