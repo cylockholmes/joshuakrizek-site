@@ -91,6 +91,13 @@ pre.code { background: var(--code-bg); border: 1px solid var(--border); border-l
 pre.code code { background: none; border: 0; padding: 0; color: #cfe8d6; font-size: .86rem; line-height: 1.55; }
 pre.code[data-lang]:not([data-lang=""])::before { content: attr(data-lang); position: absolute; top: 0; right: .6rem; font-family: var(--mono); font-size: .68rem; color: var(--muted); text-transform: uppercase; }
 
+/* Column layouts (from Notion column blocks) */
+.columns { display: flex; gap: 1rem; margin: 1.4rem 0; }
+.columns .col { flex: 1 1 0; min-width: 0; }
+.columns .col > figure:first-child { margin-top: 0; }
+.columns .col > figure:last-child { margin-bottom: 0; }
+@media (max-width: 560px) { .columns { flex-direction: column; } }
+
 /* Mermaid diagrams */
 pre.mermaid { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; margin: 1.4rem 0; overflow-x: auto; text-align: center; line-height: normal; }
 pre.mermaid:not([data-processed]) { color: var(--muted); font-family: var(--mono); font-size: .8rem; text-align: left; }
