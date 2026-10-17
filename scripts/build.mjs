@@ -133,8 +133,9 @@ let notion;
 
 // Inline the stylesheet so pages never depend on a separately-served asset.
 const CSS = readFileSync(path.join(ROOT, "src", "styles.css"), "utf8");
-// The resume page layers its own arcade theme on top of the site styles.
+// The resume page layers its own terminal theme and boot script on top.
 const RESUME_CSS = readFileSync(path.join(ROOT, "src", "resume.css"), "utf8");
+const RESUME_JS = readFileSync(path.join(ROOT, "src", "resume.js"), "utf8");
 
 // ---- Helpers ----------------------------------------------------------------
 const esc = (s = "") =>
@@ -529,142 +530,182 @@ ${header}
 ${footer}`;
 }
 
-// The resume, styled as an 80s arcade cabinet: skills are power meters, certs
-// are inventory cartridges, jobs are stages, CTF placements are high scores.
+// The resume as a green-screen terminal session: the page "boots", prints a
+// block-letter banner, then runs commands whose output is the resume.
+// Everything is real HTML; resume.js only animates the reveal.
+const BLOCK_FONT = {
+  J: ["█████", "   █ ", "   █ ", "█  █ ", " ██  "],
+  O: [" ███ ", "█   █", "█   █", "█   █", " ███ "],
+  S: [" ████", "█    ", " ███ ", "    █", "████ "],
+  H: ["█   █", "█   █", "█████", "█   █", "█   █"],
+  U: ["█   █", "█   █", "█   █", "█   █", " ███ "],
+  A: [" ███ ", "█   █", "█████", "█   █", "█   █"],
+  K: ["█   █", "█  █ ", "███  ", "█  █ ", "█   █"],
+  R: ["████ ", "█   █", "████ ", "█  █ ", "█   █"],
+  I: ["█████", "  █  ", "  █  ", "  █  ", "█████"],
+  Z: ["█████", "   █ ", "  █  ", " █   ", "█████"],
+  E: ["█████", "█    ", "████ ", "█    ", "█████"],
+};
+
+const blockText = (word) =>
+  BLOCK_FONT.J.map((_, row) =>
+    [...word.toUpperCase()].map((ch) => (BLOCK_FONT[ch] || ["     "])[row]).join(" ")
+  ).join("\n");
+
 function resumePage() {
-  const meter = (level) =>
-    `<span class="meter" role="img" aria-label="${level} out of 10">${Array.from(
-      { length: 10 },
-      (_, i) => `<i${i < level ? ' class="on"' : ""}></i>`
-    ).join("")}</span>`;
+  const today = new Date().toISOString().slice(0, 10);
+  // A command line. The prompt is decoration; the command text is what types out.
+  const cmd = (c) => `<p class="ln cmd"><span class="prompt">A:\\&gt;</span> <span class="typed">${esc(c)}</span></p>`;
+  const bar = (level) =>
+    `<span class="bar" role="img" aria-label="level ${level} of 10">[<b>${"█".repeat(level)}</b>${"·".repeat(10 - level)}]</span>`;
 
-  const stats = SITE.skills
+  const skills = SITE.skills
     .map(
-      (s) => `<li>
-          <span class="stat-name">${esc(s.name)}</span>
-          ${meter(s.level)}
-          <span class="stat-proof">${esc(s.proof)}</span>
+      (s) => `<li class="ln row skill">
+          <span class="k">${esc(s.name)}</span>${bar(s.level)}<span class="lv">LV ${s.level}</span>
+          <span class="dim">${esc(s.proof)}</span>
         </li>`
     )
     .join("\n        ");
 
-  const carts = SITE.certs
+  const certs = SITE.certs
     .map(
-      (c) => `<li class="cart">
-          <span class="cart-label">${esc(c.code)}</span>
-          <span class="cart-name">${esc(c.name)}</span>
-          <span class="cart-note">${esc(c.note)}</span>
+      (c) => `<li class="ln row cert">
+          <span class="k">${esc(c.code.toUpperCase().replace("+", "PLUS"))}</span><span class="ext">.CRT</span>
+          <span>${esc(c.name)}</span>
+          <span class="dim">${esc(c.note)}</span>
         </li>`
     )
     .join("\n        ");
 
-  const n = SITE.experience.length;
-  const stages = SITE.experience
+  const jobs = SITE.experience
     .map(
-      (e, i) => `<li class="stage${i === 0 ? " current" : ""}">
-          <span class="stage-no">Stage ${n - i}</span>
-          <div class="stage-body">
-            <h3>${esc(e.role)}</h3>
-            <p class="stage-org">${esc(e.org)} <span>${esc(e.when)}</span></p>
-            <p>${esc(e.what)}</p>
-          </div>
+      (e) => `<li class="ln job">
+          <p class="job-head"><span class="when">${esc(e.when)}</span> <span class="k">${esc(e.org)}</span></p>
+          <p class="job-role">${esc(e.role)}</p>
+          <p class="dim">${esc(e.what)}</p>
         </li>`
     )
     .join("\n        ");
 
   const scores = SITE.scores
     .map(
-      (s, i) => `<tr${i === 0 ? ' class="top"' : ""}>
-            <td class="rank">${esc(s.rank)}</td>
-            <td class="of">of ${esc(s.of)}</td>
-            <td class="event">${esc(s.event)}<span>${esc([s.where, s.year].filter(Boolean).join(", "))}</span></td>
+      (s) => `<tr class="ln">
+            <td class="k">${esc(s.rank)}</td>
+            <td class="dim">${esc(s.of)}</td>
+            <td>${esc(s.event)} <span class="dim">${esc([s.where, s.year].filter(Boolean).join(", "))}</span></td>
           </tr>`
     )
     .join("\n          ");
 
-  const saves = SITE.education
+  const edu = SITE.education
     .map(
-      (e, i) => `<li><span class="slot">Slot ${i + 1}</span><strong>${esc(e.degree)}</strong><span>${esc(e.school)} · ${esc(e.when)}</span></li>`
+      (e) => `<li class="ln row edu">
+          <span class="k">${esc(e.degree)}</span>
+          <span class="dim">${esc(e.school)}, ${esc(e.when)}</span>
+        </li>`
     )
     .join("\n        ");
 
   return `${head({
     title: `Resume · ${SITE.name}`,
-    desc: `${SITE.name} — penetration tester. Skills, certifications, experience, and CTF results.`,
+    desc: `${SITE.name}: penetration tester. Skills, certifications, experience, and CTF results.`,
     path: "/resume.html",
     type: "profile",
     schema: { "@type": "ProfilePage", mainEntity: person() },
-    bodyClass: "arcade-page",
+    bodyClass: "term-page",
     extraHead: `<link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap"/>
-<style>${RESUME_CSS}</style>`,
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap"/>
+<style>${RESUME_CSS}</style>
+<script>
+  // Hide lines before first paint so the boot sequence can reveal them.
+  // Without JS, or with reduced motion, everything is simply visible.
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("booting");
+</script>`,
   })}
 ${header}
-<main class="arcade">
-  <section class="title-screen" aria-labelledby="resume-title">
-    <div class="horizon" aria-hidden="true"><div class="sun"></div><div class="floor"></div></div>
-    <div class="title-copy">
-      <p class="p1">Player 1</p>
-      <h1 id="resume-title" class="logo"><span>Joshua</span><span>Krizek</span></h1>
-      <p class="class-line">Class: Penetration Tester</p>
-      <p class="hi">Hi-score: 1st place, Black Hat USA 2026</p>
-      <a class="press-start" href="mailto:${SITE.email}?subject=Let%27s%20talk">Press start to email me</a>
-    </div>
-  </section>
+<main class="term-wrap">
+  <div class="bezel">
+    <div class="glass">
+      <div class="screen" id="screen">
+        <p class="ln sys">JK/OS 1.0 &nbsp;&nbsp; TTY01 &nbsp;&nbsp; ${today}</p>
+        <p class="ln sys">MEMORY TEST ........ 640K OK</p>
+        <p class="ln sys">LOADING OPERATOR PROFILE ........ DONE</p>
 
-  <section class="panel" aria-labelledby="stats-h">
-    <h2 id="stats-h">Player stats</h2>
-    <ul class="stats">
-        ${stats}
-    </ul>
-  </section>
+        <h1 class="sr-only">${esc(SITE.name)}, Penetration Tester</h1>
+        <pre class="ln banner" aria-hidden="true">${blockText("JOSHUA")}
 
-  <section class="panel" aria-labelledby="inv-h">
-    <h2 id="inv-h">Inventory</h2>
-    <ul class="carts">
-        ${carts}
-    </ul>
-    <p class="equipped-label">Equipped</p>
-    <ul class="equipped">
-      ${SITE.tools.map((t) => `<li>${esc(t)}</li>`).join("")}
-    </ul>
-  </section>
+${blockText("KRIZEK")}</pre>
+        <p class="ln status-row"><span>OPERATOR <b>${esc(SITE.name.toUpperCase())}</b></span><span>CLASS <b>PENETRATION TESTER</b></span><span>STATUS <b class="blink-soft">OPEN TO WORK</b></span></p>
+        <p class="ln dim">${esc(SITE.openTo)}</p>
 
-  <section class="panel" aria-labelledby="stages-h">
-    <h2 id="stages-h">Stage select</h2>
-    <ol class="stages">
-        ${stages}
-    </ol>
-  </section>
+        <section aria-labelledby="t-skills">
+          <h2 id="t-skills" class="sr-only">Skills</h2>
+          ${cmd("type skills.dat")}
+          <ul class="out">
+        ${skills}
+          </ul>
+          <p class="ln tools"><span class="dim">TOOLS:</span> ${SITE.tools.map(esc).join(" / ")}</p>
+        </section>
 
-  <section class="panel" aria-labelledby="scores-h">
-    <h2 id="scores-h">High scores</h2>
-    <table class="scores">
-      <thead><tr><th scope="col">Rank</th><th scope="col">Field</th><th scope="col">Event</th></tr></thead>
-      <tbody>
+        <section aria-labelledby="t-certs">
+          <h2 id="t-certs" class="sr-only">Certifications</h2>
+          ${cmd("dir \\certs")}
+          <ul class="out">
+        ${certs}
+          </ul>
+          <p class="ln dim">${SITE.certs.length} file(s) &nbsp; all current</p>
+        </section>
+
+        <section aria-labelledby="t-jobs">
+          <h2 id="t-jobs" class="sr-only">Experience</h2>
+          ${cmd("history /jobs")}
+          <ul class="out">
+        ${jobs}
+          </ul>
+        </section>
+
+        <section aria-labelledby="t-scores">
+          <h2 id="t-scores" class="sr-only">CTF results</h2>
+          ${cmd("scores /ctf")}
+          <table class="out scores">
+            <thead><tr class="ln"><th scope="col">RANK</th><th scope="col">FIELD</th><th scope="col">EVENT</th></tr></thead>
+            <tbody>
           ${scores}
-      </tbody>
-    </table>
-  </section>
+            </tbody>
+          </table>
+        </section>
 
-  <section class="panel" aria-labelledby="saves-h">
-    <h2 id="saves-h">Save files</h2>
-    <ul class="saves">
-        ${saves}
-    </ul>
-  </section>
+        <section aria-labelledby="t-edu">
+          <h2 id="t-edu" class="sr-only">Education</h2>
+          ${cmd("type educ.txt")}
+          <ul class="out">
+        ${edu}
+          </ul>
+        </section>
 
-  <section class="continue" aria-labelledby="continue-h">
-    <h2 id="continue-h">Continue?</h2>
-    <p>${esc(SITE.openTo)} A printable PDF resume is available on request.</p>
-    <div class="continue-row">
-      <a class="arcade-btn" href="mailto:${SITE.email}">Email</a>
-      <a class="arcade-btn alt" href="${SITE.linkedin}" rel="noopener">LinkedIn</a>
-      <a class="arcade-btn alt" href="${SITE.github}" rel="noopener">GitHub</a>
+        ${cmd("contact")}
+        <ul class="out">
+          <li class="ln row contact"><span class="dim">EMAIL</span><a href="mailto:${SITE.email}">${esc(SITE.email)}</a></li>
+          <li class="ln row contact"><span class="dim">LINKEDIN</span><a href="${SITE.linkedin}" rel="noopener">${esc(SITE.linkedin.replace(/^https:\/\/(www\.)?|\/$/g, ""))}</a></li>
+          <li class="ln row contact"><span class="dim">GITHUB</span><a href="${SITE.github}" rel="noopener">${esc(SITE.github.replace(/^https:\/\/|\/$/g, ""))}</a></li>
+        </ul>
+        <p class="ln dim">Printable PDF resume available on request.</p>
+        <p class="ln cmd last"><span class="prompt">A:\\&gt;</span> <span class="cursor" aria-hidden="true">█</span></p>
+      </div>
     </div>
-  </section>
+    <nav class="oia" aria-label="Contact">
+      <span class="oia-ready">READY</span>
+      <a href="mailto:${SITE.email}" data-key="e"><kbd>E</kbd> EMAIL</a>
+      <a href="${SITE.linkedin}" rel="noopener" data-key="l"><kbd>L</kbd> LINKEDIN</a>
+      <a href="${SITE.github}" rel="noopener" data-key="g"><kbd>G</kbd> GITHUB</a>
+      <button type="button" data-key="p" onclick="print()"><kbd>P</kbd> PRINT</button>
+    </nav>
+    <button type="button" class="skip" id="skip">Press any key to skip</button>
+  </div>
 </main>
+<script>${RESUME_JS}</script>
 ${footer}`;
 }
 
