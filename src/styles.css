@@ -101,6 +101,12 @@ pre.code[data-lang]:not([data-lang=""])::before { content: attr(data-lang); posi
 .btn { display: inline-block; font-family: var(--mono); font-weight: 700; background: var(--accent); color: #05130b; padding: .6rem 1.05rem; border-radius: 8px; }
 .btn:hover { text-decoration: none; filter: brightness(1.08); }
 
+/* Hero call-to-action + projects */
+.hero .open-to { font-family: var(--mono); font-size: .9rem; color: var(--text); max-width: 60ch; border-left: 3px solid var(--accent); padding-left: .8rem; margin: 1.2rem 0; }
+.cta-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.2rem; }
+.btn-ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+.card h3 { margin: 0 0 .4rem; font-size: 1.12rem; color: var(--text); font-family: var(--mono); }
+
 /* Column layouts (from Notion column blocks) */
 .columns { display: flex; gap: 1rem; margin: 1.4rem 0; }
 .columns .col { flex: 1 1 0; min-width: 0; }

@@ -20,12 +20,48 @@ const DATABASE_ID =
 
 const SITE = {
   name: "Joshua Krizek",
-  tagline: "Cybersecurity and IT professional",
+  url: "https://joshuakrizek.com",
+  tagline: "Penetration Tester · Offensive Security",
   intro:
-    "Write-ups and walkthroughs from my journey into offensive security — HackTheBox and TCM PEH machines, tooling guides, and the occasional security war story.",
+    "Security researcher on the Synack Red Team, testing commercial and federal web apps and hosts. PNPT, GWAPT, GCIH, GSEC, Security+. 1st place (solo) in the siberX & SANS Core NetWars CTF at Black Hat USA 2026. Here you'll find my tools, write-ups, and walkthroughs.",
+  openTo:
+    "Open to mid-level offensive security, AppSec, and security engineering roles — US (remote or onsite) and Canada.",
   email: "hello@joshuakrizek.com",
   github: "https://github.com/cylockholmes/",
   linkedin: "https://www.linkedin.com/in/joshua-krizek/",
+  certs: [
+    "PNPT — Practical Network Penetration Tester",
+    "GWAPT — GIAC Web Application Penetration Tester",
+    "GCIH — GIAC Certified Incident Handler",
+    "GSEC — GIAC Security Essentials",
+    "Security+ — CompTIA",
+    "eJPT — eLearnSecurity Junior Penetration Tester",
+  ],
+  education: [
+    { degree: "M.S. Cybersecurity and Information Assurance", school: "Western Governors University", when: "In progress" },
+    { degree: "Undergraduate Certificate in Applied Cyber Security", school: "SANS Technology Institute", when: "2022" },
+    { degree: "B.S. Business Administration, Computer Information Systems", school: "Thomas Edison State University", when: "2019" },
+  ],
+  projects: [
+    {
+      name: "assay",
+      url: "https://github.com/cylockholmes/assay",
+      lang: "Python",
+      desc: "Recon and triage for authorized offensive testing — signal over volume.",
+    },
+    {
+      name: "burp-id-switcher",
+      url: "https://github.com/cylockholmes/burp-id-switcher",
+      lang: "Kotlin",
+      desc: "Burp Suite extension: mark parameters in Repeater and swap them against other test accounts' values for fast IDOR testing.",
+    },
+    {
+      name: "recon-search",
+      url: "https://github.com/cylockholmes/recon-search",
+      lang: "Tooling",
+      desc: "Self-contained search across recon notes in bug bounty target folders.",
+    },
+  ],
   year: new Date().getFullYear(),
 };
 
@@ -190,23 +226,67 @@ function blocksToHtml(blocks) {
 }
 
 // ---- Page templates ---------------------------------------------------------
-const head = (title, desc) => `<!doctype html>
+// JSON-LD for the site owner. Embedded on the homepage and About page, and
+// referenced as the author of every post.
+const person = () => ({
+  "@type": "Person",
+  name: SITE.name,
+  jobTitle: "Penetration Tester",
+  url: SITE.url,
+  email: `mailto:${SITE.email}`,
+  sameAs: [SITE.github.replace(/\/$/, ""), SITE.linkedin.replace(/\/$/, "")],
+  alumniOf: SITE.education.map((e) => ({ "@type": "EducationalOrganization", name: e.school })),
+  knowsAbout: ["Penetration testing", "Web application security", "Active Directory", "Bug bounty"],
+});
+
+// Keep "</script>" out of inline JSON so post titles can't break out of the tag.
+const jsonLd = (obj) =>
+  `<script type="application/ld+json">${JSON.stringify({
+    "@context": "https://schema.org",
+    ...obj,
+  }).replace(/</g, "\\u003c")}</script>`;
+
+// path is site-relative ("/about.html"); used for canonical + og:url.
+const head = ({ title, desc, path: pagePath = "/", type = "website", schema = null, noindex = false }) => {
+  const description = desc || SITE.tagline;
+  const url = SITE.url + pagePath;
+  return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>${esc(title)}</title>
-<meta name="description" content="${esc(desc || SITE.tagline)}"/>
+<meta name="description" content="${esc(description)}"/>
+<meta name="author" content="${esc(SITE.name)}"/>
+${noindex ? `<meta name="robots" content="noindex"/>` : `<link rel="canonical" href="${esc(url)}"/>`}
+<meta property="og:site_name" content="${esc(SITE.name)}"/>
+<meta property="og:type" content="${type}"/>
+<meta property="og:title" content="${esc(title)}"/>
+<meta property="og:description" content="${esc(description)}"/>
+<meta property="og:url" content="${esc(url)}"/>
+<meta property="og:image" content="${SITE.url}/og.png"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="${esc(title)}"/>
+<meta name="twitter:description" content="${esc(description)}"/>
+<meta name="twitter:image" content="${SITE.url}/og.png"/>
+<meta name="theme-color" content="#0b0f0d"/>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+<link rel="alternate" type="application/rss+xml" title="${esc(SITE.name)}" href="/feed.xml"/>
+${schema ? jsonLd(schema) : ""}
 <style>${CSS}</style>
 </head>
 <body>`;
+};
 
 const header = `<header class="site-header">
   <a class="brand" href="/">${esc(SITE.name)}<span class="cursor">_</span></a>
   <nav>
     <a href="/">Home</a>
-    <a href="/services.html">Services</a>
+    <a href="/#projects">Projects</a>
     <a href="/about.html">About</a>
+    <a href="/services.html">Services</a>
     <a href="${SITE.github}" rel="noopener">GitHub</a>
     <a href="${SITE.linkedin}" rel="noopener">LinkedIn</a>
   </nav>
@@ -241,18 +321,48 @@ function postCard(p) {
   </article>`;
 }
 
+function projectsSection() {
+  const card = (p) => `<article class="card">
+      <a class="card-link" href="${esc(p.url)}" rel="noopener">
+        <h3>${esc(p.name)}</h3>
+        <p class="excerpt">${esc(p.desc)}</p>
+        <div class="tags"><span class="tag">${esc(p.lang)}</span></div>
+      </a>
+    </article>`;
+  return `<section class="projects" id="projects">
+    <h2 class="section-title">Projects</h2>
+    <div class="grid">
+      ${SITE.projects.map(card).join("\n")}
+    </div>
+  </section>`;
+}
+
+const ctaRow = `<div class="cta-row">
+      <a class="btn" href="mailto:${SITE.email}">Email me</a>
+      <a class="btn btn-ghost" href="${SITE.linkedin}" rel="noopener">LinkedIn</a>
+      <a class="btn btn-ghost" href="${SITE.github}" rel="noopener">GitHub</a>
+    </div>`;
+
 function indexPage(posts) {
-  return `${head(
-    `${SITE.name} · ${SITE.tagline}`,
-    SITE.intro
-  )}
+  return `${head({
+    title: `${SITE.name} · ${SITE.tagline}`,
+    desc: SITE.intro,
+    path: "/",
+    schema: {
+      "@type": "ProfilePage",
+      mainEntity: person(),
+    },
+  })}
 ${header}
 <main>
   <section class="hero">
     <h1>${esc(SITE.name)}</h1>
     <p class="tagline">${esc(SITE.tagline)}</p>
     <p class="intro">${esc(SITE.intro)}</p>
+    <p class="open-to">${esc(SITE.openTo)}</p>
+    ${ctaRow}
   </section>
+  ${projectsSection()}
   <section class="posts">
     <h2 class="section-title">Posts</h2>
     <div class="grid">
@@ -267,7 +377,21 @@ function postPage(p) {
   const tags = p.tags
     .map((t) => `<span class="tag">${esc(t)}</span>`)
     .join("");
-  return `${head(`${p.title} · ${SITE.name}`, p.excerpt)}
+  return `${head({
+    title: `${p.title} · ${SITE.name}`,
+    desc: p.excerpt,
+    path: `/posts/${p.slug}.html`,
+    type: "article",
+    schema: {
+      "@type": "BlogPosting",
+      headline: p.title,
+      description: p.excerpt || undefined,
+      datePublished: p.dateRaw || undefined,
+      keywords: p.tags.join(", ") || undefined,
+      url: `${SITE.url}/posts/${p.slug}.html`,
+      author: { "@type": "Person", name: SITE.name, url: SITE.url },
+    },
+  })}
 ${header}
 <main class="post">
   <a class="back" href="/">&larr; All posts</a>
@@ -290,34 +414,138 @@ ${footer}`;
 }
 
 function aboutPage() {
-  return `${head(`About · ${SITE.name}`, "About Joshua Krizek")}
+  return `${head({
+    title: `About · ${SITE.name}`,
+    desc: `${SITE.name} — penetration tester on the Synack Red Team. Certifications, experience, and education.`,
+    path: "/about.html",
+    type: "profile",
+    schema: { "@type": "AboutPage", mainEntity: person() },
+  })}
 ${header}
 <main class="post">
   <a class="back" href="/">&larr; Home</a>
   <h1>About</h1>
   <article class="post-body">
-    <p>Hey! I'm <strong>${esc(
-      SITE.name
-    )}</strong> — a cybersecurity and IT professional.</p>
-    <p>This site is where I document what I learn as I work through HackTheBox
-       and TCM PEH machines, build out my pentesting toolkit, and write up the
-       occasional security story. My focus right now is offensive security and
-       the fundamentals of practical ethical hacking.</p>
-    <p>Reach me at <a href="mailto:${SITE.email}">${SITE.email}</a>, or find me
-       on <a href="${SITE.github}" rel="noopener">GitHub</a> and
-       <a href="${SITE.linkedin}" rel="noopener">LinkedIn</a>.</p>
+    <p>I'm <strong>${esc(SITE.name)}</strong>, a penetration tester based in
+       Tucson, Arizona. I run paid offensive security missions as a contract
+       Security Researcher on the <strong>Synack Red Team</strong>, testing
+       commercial and federal web applications and hosts and writing up each
+       finding with reproduction steps, impact, and remediation guidance.</p>
+    <p>Before that I was an Intelligence Operations Analyst at Centripetal
+       Networks, where I built a Sliver C2 adversary-emulation demo and analyzed
+       attacker infrastructure across 15+ enterprise customer environments, and an
+       IT Specialist at Hudbay Minerals managing Active Directory across four US
+       sites. That defender-side background shapes how I test and how I write
+       remediation advice people can actually act on.</p>
+    <p>I compete in CTFs whenever I can — most recently taking <strong>1st place
+       (solo)</strong> in the siberX &amp; SANS Core NetWars CTF at Black Hat USA
+       2026 — and I've coached the University of Arizona CyberCats on
+       exploitation, reverse engineering, and the OWASP Top 10.</p>
+
+    <h2>Certifications</h2>
+    <ul>
+      ${SITE.certs.map((c) => `<li>${esc(c)}</li>`).join("\n      ")}
+    </ul>
+
+    <h2>Education</h2>
+    <ul>
+      ${SITE.education
+        .map((e) => `<li><strong>${esc(e.degree)}</strong> — ${esc(e.school)} (${esc(e.when)})</li>`)
+        .join("\n      ")}
+    </ul>
+
+    <h2>Get in touch</h2>
+    <p>${esc(SITE.openTo)} My resume is available on request.</p>
   </article>
+  ${ctaRow}
 </main>
 ${footer}`;
 }
 
+function notFoundPage() {
+  return `${head({ title: `Not found · ${SITE.name}`, desc: "Page not found.", path: "/404.html", noindex: true })}
+${header}
+<main class="post">
+  <h1>404</h1>
+  <p class="intro">That page doesn't exist — maybe it moved when the blog was migrated.</p>
+  <p><a href="/">&larr; Back to the homepage</a></p>
+</main>
+${footer}`;
+}
+
+// ---- Feeds ------------------------------------------------------------------
+const xmlEsc = (s = "") =>
+  String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+
+function sitemapXml(posts) {
+  const urls = [
+    { loc: "/" },
+    { loc: "/about.html" },
+    { loc: "/services.html" },
+    ...posts.map((p) => ({ loc: `/posts/${p.slug}.html`, lastmod: p.dateRaw })),
+  ];
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls
+  .map(
+    (u) =>
+      `  <url><loc>${xmlEsc(SITE.url + u.loc)}</loc>${
+        u.lastmod ? `<lastmod>${xmlEsc(u.lastmod.slice(0, 10))}</lastmod>` : ""
+      }</url>`
+  )
+  .join("\n")}
+</urlset>
+`;
+}
+
+function rssXml(posts) {
+  const items = posts
+    .map((p) => {
+      const link = `${SITE.url}/posts/${p.slug}.html`;
+      return `  <item>
+    <title>${xmlEsc(p.title)}</title>
+    <link>${xmlEsc(link)}</link>
+    <guid isPermaLink="true">${xmlEsc(link)}</guid>${
+      p.dateRaw ? `\n    <pubDate>${new Date(p.dateRaw).toUTCString()}</pubDate>` : ""
+    }
+    <description>${xmlEsc(p.excerpt)}</description>
+${p.tags.map((t) => `    <category>${xmlEsc(t)}</category>`).join("\n")}
+  </item>`;
+    })
+    .join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>${xmlEsc(SITE.name)}</title>
+  <link>${SITE.url}/</link>
+  <description>${xmlEsc(SITE.intro)}</description>
+  <language>en-us</language>
+  <atom:link href="${SITE.url}/feed.xml" rel="self" type="application/rss+xml"/>
+${items}
+</channel>
+</rss>
+`;
+}
+
+const robotsTxt = () => `User-agent: *
+Allow: /
+
+Sitemap: ${SITE.url}/sitemap.xml
+`;
+
 function servicesPage() {
   const svc = (title, desc) =>
     `<div class="card"><div class="svc"><h3>${title}</h3><p>${desc}</p></div></div>`;
-  return `${head(
-    `Services · ${SITE.name}`,
-    "Offensive and defensive security services — penetration testing (external, internal, physical) and blue team assessments and consulting."
-  )}
+  return `${head({
+    title: `Services · ${SITE.name}`,
+    desc: "Offensive and defensive security services — penetration testing (external, internal, physical) and blue team assessments and consulting.",
+    path: "/services.html",
+  })}
 ${header}
 <main class="post services">
   <a class="back" href="/">&larr; Home</a>
@@ -513,20 +741,30 @@ async function main() {
   if (existsSync(path.join(ROOT, "CNAME"))) {
     await cp(path.join(ROOT, "CNAME"), path.join(DIST, "CNAME"));
   }
+  // Social preview card + favicon (og.png is generated by scripts/make-og.mjs).
+  for (const f of ["og.png", "favicon.svg"]) {
+    await cp(path.join(ROOT, "src", f), path.join(DIST, f));
+  }
 
   // Pages
   await writeFile(path.join(DIST, "index.html"), indexPage(posts));
   await writeFile(path.join(DIST, "about.html"), aboutPage());
   await writeFile(path.join(DIST, "services.html"), servicesPage());
+  await writeFile(path.join(DIST, "404.html"), notFoundPage());
   for (const p of posts) {
     await writeFile(path.join(DIST, "posts", `${p.slug}.html`), postPage(p));
   }
 
-  console.log(`\nBuilt ${posts.length + 2} pages into ./dist`);
+  // Discovery: sitemap, robots, RSS
+  await writeFile(path.join(DIST, "sitemap.xml"), sitemapXml(posts));
+  await writeFile(path.join(DIST, "robots.txt"), robotsTxt());
+  await writeFile(path.join(DIST, "feed.xml"), rssXml(posts));
+
+  console.log(`\nBuilt ${posts.length + 4} pages into ./dist`);
 }
 
 // Render helpers are exported so the build can be unit-tested without Notion.
-export { blocksToHtml, richText, indexPage, postPage, aboutPage, servicesPage, readProps, slugify, localizeImages, guessExt };
+export { SITE, blocksToHtml, richText, indexPage, postPage, aboutPage, servicesPage, notFoundPage, sitemapXml, rssXml, robotsTxt, readProps, slugify, localizeImages, guessExt };
 
 // Only hit the Notion API when run directly (node scripts/build.mjs).
 const invokedDirectly =
