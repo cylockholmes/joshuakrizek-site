@@ -10,6 +10,7 @@ import {
   indexPage,
   postPage,
   aboutPage,
+  resumePage,
   servicesPage,
   notFoundPage,
   sitemapXml,
@@ -61,6 +62,7 @@ await mkdir(path.join(OUT, "assets"), { recursive: true });
 await cp(path.join(ROOT, "src", "styles.css"), path.join(OUT, "assets", "styles.css"));
 await writeFile(path.join(OUT, "index.html"), indexPage(posts));
 await writeFile(path.join(OUT, "about.html"), aboutPage());
+await writeFile(path.join(OUT, "resume.html"), resumePage());
 await writeFile(path.join(OUT, "services.html"), servicesPage());
 await writeFile(path.join(OUT, "404.html"), notFoundPage());
 await writeFile(path.join(OUT, "posts", "academy.html"), postPage(post));
@@ -85,6 +87,10 @@ const checks = [
   ["404 is noindex", notFoundPage().includes('content="noindex"') && !notFoundPage().includes('rel="canonical"')],
   ["sitemap lists posts", sitemapXml(posts).includes("/posts/academy.html</loc><lastmod>2025-07-15")],
   ["rss has items", (rssXml(posts).match(/<item>/g) || []).length === 2],
+  ["resume has all sections", ["Player stats", "Inventory", "Stage select", "High scores", "Save files"].every((h) => resumePage().includes(h))],
+  ["resume meters are labelled", resumePage().includes('aria-label="9 out of 10"')],
+  ["resume has no phone number", !/\d{3}[.\-]\d{3}[.\-]\d{4}/.test(resumePage())],
+  ["nav links resume", indexPage(posts).includes('href="/resume.html">Resume')],
   ["robots points at sitemap", robotsTxt().includes("Sitemap: https://joshuakrizek.com/sitemap.xml")],
 ];
 
@@ -92,6 +98,7 @@ const checks = [
 const pages = {
   index: [indexPage(posts), "https://joshuakrizek.com/"],
   about: [aboutPage(), "https://joshuakrizek.com/about.html"],
+  resume: [resumePage(), "https://joshuakrizek.com/resume.html"],
   services: [servicesPage(), "https://joshuakrizek.com/services.html"],
   post: [postPage(post), "https://joshuakrizek.com/posts/academy.html"],
 };

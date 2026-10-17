@@ -30,12 +30,74 @@ const SITE = {
   github: "https://github.com/cylockholmes/",
   linkedin: "https://www.linkedin.com/in/joshua-krizek/",
   certs: [
-    "PNPT — Practical Network Penetration Tester",
-    "GWAPT — GIAC Web Application Penetration Tester",
-    "GCIH — GIAC Certified Incident Handler",
-    "GSEC — GIAC Security Essentials",
-    "Security+ — CompTIA",
-    "eJPT — eLearnSecurity Junior Penetration Tester",
+    { code: "PNPT", name: "Practical Network Penetration Tester", note: "TCM Security · 2026" },
+    { code: "GWAPT", name: "GIAC Web Application Penetration Tester", note: "Active through 2030" },
+    { code: "GCIH", name: "GIAC Certified Incident Handler", note: "Active through 2030" },
+    { code: "GSEC", name: "GIAC Security Essentials", note: "Active through 2029" },
+    { code: "Sec+", name: "CompTIA Security+", note: "2026" },
+    { code: "eJPT", name: "eLearnSecurity Junior Penetration Tester", note: "2021" },
+  ],
+  // Resume page data. Levels are out of 10 segments (self-assessed, weighted
+  // by certs and paid work rather than coursework).
+  skills: [
+    { name: "Web app pentesting", level: 9, proof: "GWAPT · Synack Red Team missions" },
+    { name: "Network & AD attacks", level: 8, proof: "PNPT · eJPT · AD admin at Hudbay" },
+    { name: "Recon & OSINT", level: 8, proof: "Trace Labs top 6 · built assay" },
+    { name: "Findings & reporting", level: 8, proof: "Repro steps, impact, remediation" },
+    { name: "Adversary emulation", level: 7, proof: "Sliver C2 demo at Centripetal" },
+    { name: "Python tooling", level: 7, proof: "assay · recon-search" },
+    { name: "Incident handling", level: 6, proof: "GCIH · threat intel reporting" },
+    { name: "Crypto & reversing", level: 6, proof: "NetWars crypto · NCL coaching" },
+  ],
+  tools: ["Burp Suite", "Sliver C2", "Splunk", "Wireshark", "Active Directory", "pfSense", "VMware", "Python", "Kotlin", "Linux", "Windows Server"],
+  experience: [
+    {
+      role: "Security Researcher (Contract)",
+      org: "Synack Red Team",
+      when: "Feb 2026 – now",
+      what: "Paid offensive security missions against commercial and federal web apps and hosts. Every finding ships with reproduction steps, impact analysis, and a fix.",
+    },
+    {
+      role: "Executive Officer",
+      org: "La Roca Ministries",
+      when: "Apr 2024 – Jun 2025",
+      what: "Led a binational nonprofit through a governance and compliance overhaul; ran its website, donor and finance integrations.",
+    },
+    {
+      role: "Intelligence Operations Analyst",
+      org: "Centripetal Networks",
+      when: "Mar 2023 – Jan 2024",
+      what: "Built a Sliver C2 adversary-emulation demo for the product, analyzed attacker infrastructure across 15+ enterprise customers, and built Splunk dashboards for executives.",
+    },
+    {
+      role: "IT Specialist",
+      org: "Hudbay Minerals",
+      when: "Jun 2021 – Feb 2023",
+      what: "Ran Active Directory access across four US sites with least privilege, and caught and remediated IT security policy violations.",
+    },
+    {
+      role: "Sub Coach, National Cyber League",
+      org: "University of Arizona CyberCats",
+      when: "2021",
+      what: "Taught exploitation, reverse engineering, and OWASP Top 10 sessions to a 20-person collegiate team.",
+    },
+    {
+      role: "Owner",
+      org: "PiggyBank Bargains LLC",
+      when: "Jan 2018 – Aug 2022",
+      what: "Founded and ran a small business for 4+ years with a team of 7; wrote the SOPs that let it scale.",
+    },
+  ],
+  // CTF placements, best first. "of" is the field size.
+  scores: [
+    { rank: "1st", of: "solo", event: "siberX & SANS Core NetWars CTF", year: "2026", where: "Black Hat USA" },
+    { rank: "1st", of: "7 teams", event: "US Cyber Challenge Eastern Camp CTF", year: "2019", where: "Full scholarship" },
+    { rank: "6th", of: "243", event: "Trace Labs Missing Persons OSINT CTF", year: "", where: "Team" },
+    { rank: "10th", of: "195", event: "Cipher Tech Forensics", year: "", where: "Solo · 100% complete" },
+    { rank: "13th", of: "925", event: "National Cyber League", year: "2020", where: "Arizona Pentesting Team" },
+    { rank: "17th", of: "119", event: "CyberSEED", year: "2022", where: "Team" },
+    { rank: "26th", of: "5,379", event: "National Cyber League preseason", year: "2020", where: "Solo" },
+    { rank: "35th", of: "1,173", event: "Cyber FastTrack", year: "2020", where: "Solo · SANS scholarship" },
   ],
   education: [
     { degree: "M.S. Cybersecurity and Information Assurance", school: "Western Governors University", when: "In progress" },
@@ -71,6 +133,8 @@ let notion;
 
 // Inline the stylesheet so pages never depend on a separately-served asset.
 const CSS = readFileSync(path.join(ROOT, "src", "styles.css"), "utf8");
+// The resume page layers its own arcade theme on top of the site styles.
+const RESUME_CSS = readFileSync(path.join(ROOT, "src", "resume.css"), "utf8");
 
 // ---- Helpers ----------------------------------------------------------------
 const esc = (s = "") =>
@@ -247,7 +311,7 @@ const jsonLd = (obj) =>
   }).replace(/</g, "\\u003c")}</script>`;
 
 // path is site-relative ("/about.html"); used for canonical + og:url.
-const head = ({ title, desc, path: pagePath = "/", type = "website", schema = null, noindex = false }) => {
+const head = ({ title, desc, path: pagePath = "/", type = "website", schema = null, noindex = false, extraHead = "", bodyClass = "" }) => {
   const description = desc || SITE.tagline;
   const url = SITE.url + pagePath;
   return `<!doctype html>
@@ -276,8 +340,9 @@ ${noindex ? `<meta name="robots" content="noindex"/>` : `<link rel="canonical" h
 <link rel="alternate" type="application/rss+xml" title="${esc(SITE.name)}" href="/feed.xml"/>
 ${schema ? jsonLd(schema) : ""}
 <style>${CSS}</style>
+${extraHead}
 </head>
-<body>`;
+<body${bodyClass ? ` class="${bodyClass}"` : ""}>`;
 };
 
 const header = `<header class="site-header">
@@ -285,6 +350,7 @@ const header = `<header class="site-header">
   <nav>
     <a href="/">Home</a>
     <a href="/#projects">Projects</a>
+    <a href="/resume.html">Resume</a>
     <a href="/about.html">About</a>
     <a href="/services.html">Services</a>
     <a href="${SITE.github}" rel="noopener">GitHub</a>
@@ -339,6 +405,7 @@ function projectsSection() {
 
 const ctaRow = `<div class="cta-row">
       <a class="btn" href="mailto:${SITE.email}">Email me</a>
+      <a class="btn btn-ghost" href="/resume.html">Resume</a>
       <a class="btn btn-ghost" href="${SITE.linkedin}" rel="noopener">LinkedIn</a>
       <a class="btn btn-ghost" href="${SITE.github}" rel="noopener">GitHub</a>
     </div>`;
@@ -444,7 +511,7 @@ ${header}
 
     <h2>Certifications</h2>
     <ul>
-      ${SITE.certs.map((c) => `<li>${esc(c)}</li>`).join("\n      ")}
+      ${SITE.certs.map((c) => `<li>${esc(c.code)} — ${esc(c.name)} (${esc(c.note)})</li>`).join("\n      ")}
     </ul>
 
     <h2>Education</h2>
@@ -458,6 +525,145 @@ ${header}
     <p>${esc(SITE.openTo)} My resume is available on request.</p>
   </article>
   ${ctaRow}
+</main>
+${footer}`;
+}
+
+// The resume, styled as an 80s arcade cabinet: skills are power meters, certs
+// are inventory cartridges, jobs are stages, CTF placements are high scores.
+function resumePage() {
+  const meter = (level) =>
+    `<span class="meter" role="img" aria-label="${level} out of 10">${Array.from(
+      { length: 10 },
+      (_, i) => `<i${i < level ? ' class="on"' : ""}></i>`
+    ).join("")}</span>`;
+
+  const stats = SITE.skills
+    .map(
+      (s) => `<li>
+          <span class="stat-name">${esc(s.name)}</span>
+          ${meter(s.level)}
+          <span class="stat-proof">${esc(s.proof)}</span>
+        </li>`
+    )
+    .join("\n        ");
+
+  const carts = SITE.certs
+    .map(
+      (c) => `<li class="cart">
+          <span class="cart-label">${esc(c.code)}</span>
+          <span class="cart-name">${esc(c.name)}</span>
+          <span class="cart-note">${esc(c.note)}</span>
+        </li>`
+    )
+    .join("\n        ");
+
+  const n = SITE.experience.length;
+  const stages = SITE.experience
+    .map(
+      (e, i) => `<li class="stage${i === 0 ? " current" : ""}">
+          <span class="stage-no">Stage ${n - i}</span>
+          <div class="stage-body">
+            <h3>${esc(e.role)}</h3>
+            <p class="stage-org">${esc(e.org)} <span>${esc(e.when)}</span></p>
+            <p>${esc(e.what)}</p>
+          </div>
+        </li>`
+    )
+    .join("\n        ");
+
+  const scores = SITE.scores
+    .map(
+      (s, i) => `<tr${i === 0 ? ' class="top"' : ""}>
+            <td class="rank">${esc(s.rank)}</td>
+            <td class="of">of ${esc(s.of)}</td>
+            <td class="event">${esc(s.event)}<span>${esc([s.where, s.year].filter(Boolean).join(", "))}</span></td>
+          </tr>`
+    )
+    .join("\n          ");
+
+  const saves = SITE.education
+    .map(
+      (e, i) => `<li><span class="slot">Slot ${i + 1}</span><strong>${esc(e.degree)}</strong><span>${esc(e.school)} · ${esc(e.when)}</span></li>`
+    )
+    .join("\n        ");
+
+  return `${head({
+    title: `Resume · ${SITE.name}`,
+    desc: `${SITE.name} — penetration tester. Skills, certifications, experience, and CTF results.`,
+    path: "/resume.html",
+    type: "profile",
+    schema: { "@type": "ProfilePage", mainEntity: person() },
+    bodyClass: "arcade-page",
+    extraHead: `<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap"/>
+<style>${RESUME_CSS}</style>`,
+  })}
+${header}
+<main class="arcade">
+  <section class="title-screen" aria-labelledby="resume-title">
+    <div class="horizon" aria-hidden="true"><div class="sun"></div><div class="floor"></div></div>
+    <div class="title-copy">
+      <p class="p1">Player 1</p>
+      <h1 id="resume-title" class="logo"><span>Joshua</span><span>Krizek</span></h1>
+      <p class="class-line">Class: Penetration Tester</p>
+      <p class="hi">Hi-score: 1st place, Black Hat USA 2026</p>
+      <a class="press-start" href="mailto:${SITE.email}?subject=Let%27s%20talk">Press start to email me</a>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="stats-h">
+    <h2 id="stats-h">Player stats</h2>
+    <ul class="stats">
+        ${stats}
+    </ul>
+  </section>
+
+  <section class="panel" aria-labelledby="inv-h">
+    <h2 id="inv-h">Inventory</h2>
+    <ul class="carts">
+        ${carts}
+    </ul>
+    <p class="equipped-label">Equipped</p>
+    <ul class="equipped">
+      ${SITE.tools.map((t) => `<li>${esc(t)}</li>`).join("")}
+    </ul>
+  </section>
+
+  <section class="panel" aria-labelledby="stages-h">
+    <h2 id="stages-h">Stage select</h2>
+    <ol class="stages">
+        ${stages}
+    </ol>
+  </section>
+
+  <section class="panel" aria-labelledby="scores-h">
+    <h2 id="scores-h">High scores</h2>
+    <table class="scores">
+      <thead><tr><th scope="col">Rank</th><th scope="col">Field</th><th scope="col">Event</th></tr></thead>
+      <tbody>
+          ${scores}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel" aria-labelledby="saves-h">
+    <h2 id="saves-h">Save files</h2>
+    <ul class="saves">
+        ${saves}
+    </ul>
+  </section>
+
+  <section class="continue" aria-labelledby="continue-h">
+    <h2 id="continue-h">Continue?</h2>
+    <p>${esc(SITE.openTo)} A printable PDF resume is available on request.</p>
+    <div class="continue-row">
+      <a class="arcade-btn" href="mailto:${SITE.email}">Email</a>
+      <a class="arcade-btn alt" href="${SITE.linkedin}" rel="noopener">LinkedIn</a>
+      <a class="arcade-btn alt" href="${SITE.github}" rel="noopener">GitHub</a>
+    </div>
+  </section>
 </main>
 ${footer}`;
 }
@@ -485,6 +691,7 @@ const xmlEsc = (s = "") =>
 function sitemapXml(posts) {
   const urls = [
     { loc: "/" },
+    { loc: "/resume.html" },
     { loc: "/about.html" },
     { loc: "/services.html" },
     ...posts.map((p) => ({ loc: `/posts/${p.slug}.html`, lastmod: p.dateRaw })),
@@ -749,6 +956,7 @@ async function main() {
   // Pages
   await writeFile(path.join(DIST, "index.html"), indexPage(posts));
   await writeFile(path.join(DIST, "about.html"), aboutPage());
+  await writeFile(path.join(DIST, "resume.html"), resumePage());
   await writeFile(path.join(DIST, "services.html"), servicesPage());
   await writeFile(path.join(DIST, "404.html"), notFoundPage());
   for (const p of posts) {
@@ -760,11 +968,11 @@ async function main() {
   await writeFile(path.join(DIST, "robots.txt"), robotsTxt());
   await writeFile(path.join(DIST, "feed.xml"), rssXml(posts));
 
-  console.log(`\nBuilt ${posts.length + 4} pages into ./dist`);
+  console.log(`\nBuilt ${posts.length + 5} pages into ./dist`);
 }
 
 // Render helpers are exported so the build can be unit-tested without Notion.
-export { SITE, blocksToHtml, richText, indexPage, postPage, aboutPage, servicesPage, notFoundPage, sitemapXml, rssXml, robotsTxt, readProps, slugify, localizeImages, guessExt };
+export { SITE, blocksToHtml, richText, indexPage, postPage, aboutPage, resumePage, servicesPage, notFoundPage, sitemapXml, rssXml, robotsTxt, readProps, slugify, localizeImages, guessExt };
 
 // Only hit the Notion API when run directly (node scripts/build.mjs).
 const invokedDirectly =
