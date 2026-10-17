@@ -133,7 +133,7 @@ let notion;
 
 // Inline the stylesheet so pages never depend on a separately-served asset.
 const CSS = readFileSync(path.join(ROOT, "src", "styles.css"), "utf8");
-// The resume page layers its own terminal theme and boot script on top.
+// The resume page layers its own desktop theme and window script on top.
 const RESUME_CSS = readFileSync(path.join(ROOT, "src", "resume.css"), "utf8");
 const RESUME_JS = readFileSync(path.join(ROOT, "src", "resume.js"), "utf8");
 
@@ -530,82 +530,203 @@ ${header}
 ${footer}`;
 }
 
-// The resume as a green-screen terminal session: the page "boots", prints a
-// block-letter banner, then runs commands whose output is the resume.
-// Everything is real HTML; resume.js only animates the reveal.
-const BLOCK_FONT = {
-  J: ["█████", "   █ ", "   █ ", "█  █ ", " ██  "],
-  O: [" ███ ", "█   █", "█   █", "█   █", " ███ "],
-  S: [" ████", "█    ", " ███ ", "    █", "████ "],
-  H: ["█   █", "█   █", "█████", "█   █", "█   █"],
-  U: ["█   █", "█   █", "█   █", "█   █", " ███ "],
-  A: [" ███ ", "█   █", "█████", "█   █", "█   █"],
-  K: ["█   █", "█  █ ", "███  ", "█  █ ", "█   █"],
-  R: ["████ ", "█   █", "████ ", "█  █ ", "█   █"],
-  I: ["█████", "  █  ", "  █  ", "  █  ", "█████"],
-  Z: ["█████", "   █ ", "  █  ", " █   ", "█████"],
-  E: ["█████", "█    ", "████ ", "█    ", "█████"],
+// The resume as a 1984-style 1-bit desktop. Every window starts open and
+// readable; dragging and collapsing (resume.js) are optional extras.
+
+// 16px-wide 1-bit icons: "#" black, "o" white, "." transparent.
+const ICONS = {
+  shield: [
+    "..############..",
+    ".#oooooooooooo#.",
+    ".#oooooooooooo#.",
+    ".#oooo####oooo#.",
+    ".#ooo##oo##ooo#.",
+    ".#ooo##oo##ooo#.",
+    ".#oooo####oooo#.",
+    ".#ooooo##ooooo#.",
+    ".#ooooo##ooooo#.",
+    "..#oooo##oooo#..",
+    "..#oooooooooo#..",
+    "...#oooooooo#...",
+    "....#oooooo#....",
+    ".....##oo##.....",
+    ".......##.......",
+  ],
+  disk: [
+    "................",
+    "................",
+    "################",
+    "#oooooooooooooo#",
+    "#oooooooooooooo#",
+    "#oooooooooooooo#",
+    "################",
+    "#oooooooooooooo#",
+    "#o##ooooooo###o#",
+    "#oooooooooooooo#",
+    "################",
+    ".##..........##.",
+  ],
+  mail: [
+    "................",
+    "................",
+    "################",
+    "##oooooooooooo##",
+    "#o#oooooooooo#o#",
+    "#oo#oooooooo#oo#",
+    "#ooo#oooooo#ooo#",
+    "#oooo##oo##oooo#",
+    "#oooooo##oooooo#",
+    "#oooooooooooooo#",
+    "#oooooooooooooo#",
+    "################",
+  ],
+  doc: [
+    "..#########.....",
+    "..#ooooooo##....",
+    "..#ooooooo#o#...",
+    "..#ooooooo####..",
+    "..#oooooooooo#..",
+    "..#o######ooo#..",
+    "..#oooooooooo#..",
+    "..#o########o#..",
+    "..#oooooooooo#..",
+    "..#o#######oo#..",
+    "..#oooooooooo#..",
+    "..#o#####oooo#..",
+    "..#oooooooooo#..",
+    "..############..",
+  ],
+  folder: [
+    "................",
+    "..#####.........",
+    ".#ooooo#........",
+    ".#oooooo#######.",
+    ".#ooooooooooooo#",
+    ".###############",
+    ".#ooooooooooooo#",
+    ".#ooooooooooooo#",
+    ".#ooooooooooooo#",
+    ".#ooooooooooooo#",
+    ".#ooooooooooooo#",
+    ".###############",
+  ],
+  cert: [
+    "..#########.....",
+    "..#ooooooo##....",
+    "..#ooooooo#o#...",
+    "..#ooooooo####..",
+    "..#o######ooo#..",
+    "..#oooooooooo#..",
+    "..#o####ooooo#..",
+    "..#oooooo###o#..",
+    "..#ooooo#ooo##..",
+    "..#ooooo#ooo##..",
+    "..#oooooo###o#..",
+    "..#ooooooo#o##..",
+    "..#oooooo#o#o#..",
+    "..#########.###.",
+  ],
 };
 
-const blockText = (word) =>
-  BLOCK_FONT.J.map((_, row) =>
-    [...word.toUpperCase()].map((ch) => (BLOCK_FONT[ch] || ["     "])[row]).join(" ")
-  ).join("\n");
+// Render an icon as crisp SVG rects, merging horizontal runs of one color.
+function pixelIcon(name, scale = 2) {
+  const rows = ICONS[name];
+  let rects = "";
+  rows.forEach((row, y) => {
+    let x = 0;
+    while (x < row.length) {
+      const c = row[x];
+      let w = 1;
+      while (row[x + w] === c) w++;
+      if (c !== ".") rects += `<rect x="${x}" y="${y}" width="${w}" height="1" fill="${c === "#" ? "#000" : "#fff"}"/>`;
+      x += w;
+    }
+  });
+  return `<svg class="px" width="${16 * scale}" height="${rows.length * scale}" viewBox="0 0 16 ${rows.length}" shape-rendering="crispEdges" aria-hidden="true">${rects}</svg>`;
+}
 
 function resumePage() {
-  const today = new Date().toISOString().slice(0, 10);
-  // A command line. The prompt is decoration; the command text is what types out.
-  const cmd = (c) => `<p class="ln cmd"><span class="prompt">A:\\&gt;</span> <span class="typed">${esc(c)}</span></p>`;
-  const bar = (level) =>
-    `<span class="bar" role="img" aria-label="level ${level} of 10">[<b>${"█".repeat(level)}</b>${"·".repeat(10 - level)}]</span>`;
+  // A window. `info` is the Finder-style status strip under the title bar.
+  const win = (id, title, body, { info = "", cls = "" } = {}) => `<section class="win ${cls}" id="${id}" aria-labelledby="${id}-t">
+    <header class="titlebar">
+      <button type="button" class="shade" aria-expanded="true" aria-controls="${id}-b"><span class="sr-only">Collapse ${esc(title)}</span></button>
+      <h2 id="${id}-t" class="wtitle">${esc(title)}</h2>
+    </header>
+    <div class="wbody" id="${id}-b">
+      ${info ? `<p class="info">${info}</p>` : ""}
+      ${body}
+    </div>
+  </section>`;
 
-  const skills = SITE.skills
-    .map(
-      (s) => `<li class="ln row skill">
-          <span class="k">${esc(s.name)}</span>${bar(s.level)}<span class="lv">LV ${s.level}</span>
-          <span class="dim">${esc(s.proof)}</span>
+  const about = `<div class="about">
+        ${pixelIcon("shield", 6)}
+        <div>
+          <h1 class="name">${esc(SITE.name)}</h1>
+          <p class="role">Penetration Tester, Synack Red Team</p>
+          <p>${esc(SITE.openTo)}</p>
+          <div class="btns">
+            <a class="mbtn default" href="mailto:${SITE.email}">Email me</a>
+            <a class="mbtn" href="${SITE.linkedin}" rel="noopener">LinkedIn</a>
+            <a class="mbtn" href="${SITE.github}" rel="noopener">GitHub</a>
+          </div>
+        </div>
+      </div>`;
+
+  // Bar fills get denser with level: light checker → stripes → dense → solid.
+  const fill = (lv) => (lv >= 9 ? "solid" : lv >= 8 ? "dense" : lv >= 7 ? "stripe" : "checker");
+  const skills = `<ul class="chart">
+        ${SITE.skills
+          .map(
+            (s) => `<li>
+          <span class="sk">${esc(s.name)}</span>
+          <span class="track" role="img" aria-label="${s.level} out of 10"><span class="bar ${fill(s.level)}" style="width:${s.level * 10}%"></span></span>
+          <span class="proof">${esc(s.proof)}</span>
         </li>`
-    )
-    .join("\n        ");
+          )
+          .join("\n        ")}
+      </ul>
+      <p class="tools"><strong>Tools</strong> ${SITE.tools.map(esc).join(", ")}</p>`;
 
-  const certs = SITE.certs
-    .map(
-      (c) => `<li class="ln row cert">
-          <span class="k">${esc(c.code.toUpperCase().replace("+", "PLUS"))}</span><span class="ext">.CRT</span>
-          <span>${esc(c.name)}</span>
-          <span class="dim">${esc(c.note)}</span>
+  const certs = `<ul class="icons">
+        ${SITE.certs
+          .map(
+            (c) => `<li>${pixelIcon("cert", 3)}<strong>${esc(c.code)}</strong><span>${esc(c.name)}</span><span class="note">${esc(c.note)}</span></li>`
+          )
+          .join("\n        ")}
+      </ul>`;
+
+  const jobs = `<div class="list-h" aria-hidden="true"><span>Role</span><span>When</span></div>
+      <ul class="jobs">
+        ${SITE.experience
+          .map(
+            (e, i) => `<li class="job${i === 0 ? " sel" : ""}">
+          <p class="job-h">${pixelIcon("folder", 1)}<strong>${esc(e.role)}</strong><span class="when">${esc(e.when)}</span></p>
+          <p class="org">${esc(e.org)}</p>
+          <p class="desc">${esc(e.what)}</p>
         </li>`
-    )
-    .join("\n        ");
+          )
+          .join("\n        ")}
+      </ul>`;
 
-  const jobs = SITE.experience
-    .map(
-      (e) => `<li class="ln job">
-          <p class="job-head"><span class="when">${esc(e.when)}</span> <span class="k">${esc(e.org)}</span></p>
-          <p class="job-role">${esc(e.role)}</p>
-          <p class="dim">${esc(e.what)}</p>
-        </li>`
-    )
-    .join("\n        ");
+  const scores = `<table class="list scores">
+        <thead><tr><th scope="col">Place</th><th scope="col">Event</th><th scope="col">Field</th></tr></thead>
+        <tbody>
+        ${SITE.scores
+          .map(
+            (s, i) => `<tr${i === 0 ? ' class="sel"' : ""}><td class="rank">${esc(s.rank)}</td><td>${esc(s.event)}<span class="sub">${esc([s.where, s.year].filter(Boolean).join(", "))}</span></td><td class="when">${esc(s.of)}</td></tr>`
+          )
+          .join("\n        ")}
+        </tbody>
+      </table>`;
 
-  const scores = SITE.scores
-    .map(
-      (s) => `<tr class="ln">
-            <td class="k">${esc(s.rank)}</td>
-            <td class="dim">${esc(s.of)}</td>
-            <td>${esc(s.event)} <span class="dim">${esc([s.where, s.year].filter(Boolean).join(", "))}</span></td>
-          </tr>`
-    )
-    .join("\n          ");
+  const edu = `<ul class="edu">
+        ${SITE.education
+          .map((e) => `<li>${pixelIcon("doc", 1)}<div><strong>${esc(e.degree)}</strong><span>${esc(e.school)}, ${esc(e.when)}</span></div></li>`)
+          .join("\n        ")}
+      </ul>`;
 
-  const edu = SITE.education
-    .map(
-      (e) => `<li class="ln row edu">
-          <span class="k">${esc(e.degree)}</span>
-          <span class="dim">${esc(e.school)}, ${esc(e.when)}</span>
-        </li>`
-    )
-    .join("\n        ");
+  const desk = (icon, label, href, ext = false) =>
+    `<li><a href="${href}"${ext ? ' rel="noopener"' : ""}>${pixelIcon(icon, 3)}<span>${esc(label)}</span></a></li>`;
 
   return `${head({
     title: `Resume · ${SITE.name}`,
@@ -613,97 +734,34 @@ function resumePage() {
     path: "/resume.html",
     type: "profile",
     schema: { "@type": "ProfilePage", mainEntity: person() },
-    bodyClass: "term-page",
+    bodyClass: "mac-page",
     extraHead: `<link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap"/>
-<style>${RESUME_CSS}</style>
-<script>
-  // Hide lines before first paint so the boot sequence can reveal them.
-  // Without JS, or with reduced motion, everything is simply visible.
-  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("booting");
-</script>`,
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;700&display=swap"/>
+<style>${RESUME_CSS}</style>`,
   })}
-${header}
-<main class="term-wrap">
-  <div class="bezel">
-    <div class="glass">
-      <div class="screen" id="screen">
-        <p class="ln sys">JK/OS 1.0 &nbsp;&nbsp; TTY01 &nbsp;&nbsp; ${today}</p>
-        <p class="ln sys">MEMORY TEST ........ 640K OK</p>
-        <p class="ln sys">LOADING OPERATOR PROFILE ........ DONE</p>
-
-        <h1 class="sr-only">${esc(SITE.name)}, Penetration Tester</h1>
-        <pre class="ln banner" aria-hidden="true">${blockText("JOSHUA")}
-
-${blockText("KRIZEK")}</pre>
-        <p class="ln status-row"><span>OPERATOR <b>${esc(SITE.name.toUpperCase())}</b></span><span>CLASS <b>PENETRATION TESTER</b></span><span>STATUS <b class="blink-soft">OPEN TO WORK</b></span></p>
-        <p class="ln dim">${esc(SITE.openTo)}</p>
-
-        <section aria-labelledby="t-skills">
-          <h2 id="t-skills" class="sr-only">Skills</h2>
-          ${cmd("type skills.dat")}
-          <ul class="out">
-        ${skills}
-          </ul>
-          <p class="ln tools"><span class="dim">TOOLS:</span> ${SITE.tools.map(esc).join(" / ")}</p>
-        </section>
-
-        <section aria-labelledby="t-certs">
-          <h2 id="t-certs" class="sr-only">Certifications</h2>
-          ${cmd("dir \\certs")}
-          <ul class="out">
-        ${certs}
-          </ul>
-          <p class="ln dim">${SITE.certs.length} file(s) &nbsp; all current</p>
-        </section>
-
-        <section aria-labelledby="t-jobs">
-          <h2 id="t-jobs" class="sr-only">Experience</h2>
-          ${cmd("history /jobs")}
-          <ul class="out">
-        ${jobs}
-          </ul>
-        </section>
-
-        <section aria-labelledby="t-scores">
-          <h2 id="t-scores" class="sr-only">CTF results</h2>
-          ${cmd("scores /ctf")}
-          <table class="out scores">
-            <thead><tr class="ln"><th scope="col">RANK</th><th scope="col">FIELD</th><th scope="col">EVENT</th></tr></thead>
-            <tbody>
-          ${scores}
-            </tbody>
-          </table>
-        </section>
-
-        <section aria-labelledby="t-edu">
-          <h2 id="t-edu" class="sr-only">Education</h2>
-          ${cmd("type educ.txt")}
-          <ul class="out">
-        ${edu}
-          </ul>
-        </section>
-
-        ${cmd("contact")}
-        <ul class="out">
-          <li class="ln row contact"><span class="dim">EMAIL</span><a href="mailto:${SITE.email}">${esc(SITE.email)}</a></li>
-          <li class="ln row contact"><span class="dim">LINKEDIN</span><a href="${SITE.linkedin}" rel="noopener">${esc(SITE.linkedin.replace(/^https:\/\/(www\.)?|\/$/g, ""))}</a></li>
-          <li class="ln row contact"><span class="dim">GITHUB</span><a href="${SITE.github}" rel="noopener">${esc(SITE.github.replace(/^https:\/\/|\/$/g, ""))}</a></li>
-        </ul>
-        <p class="ln dim">Printable PDF resume available on request.</p>
-        <p class="ln cmd last"><span class="prompt">A:\\&gt;</span> <span class="cursor" aria-hidden="true">█</span></p>
-      </div>
-    </div>
-    <nav class="oia" aria-label="Contact">
-      <span class="oia-ready">READY</span>
-      <a href="mailto:${SITE.email}" data-key="e"><kbd>E</kbd> EMAIL</a>
-      <a href="${SITE.linkedin}" rel="noopener" data-key="l"><kbd>L</kbd> LINKEDIN</a>
-      <a href="${SITE.github}" rel="noopener" data-key="g"><kbd>G</kbd> GITHUB</a>
-      <button type="button" data-key="p" onclick="print()"><kbd>P</kbd> PRINT</button>
-    </nav>
-    <button type="button" class="skip" id="skip">Press any key to skip</button>
-  </div>
+<nav class="menubar" aria-label="Site">
+  <a class="mb-logo" href="/">${pixelIcon("shield", 1)}<span>${esc(SITE.name)}</span></a>
+  <a href="/">Home</a>
+  <a href="/#projects">Projects</a>
+  <a href="/resume.html" aria-current="page">Resume</a>
+  <a href="/about.html">About</a>
+  <a href="/services.html">Services</a>
+</nav>
+<main class="desktop">
+  ${win("w-about", "About This Operator", about, { cls: "a-about" })}
+  <ul class="desk-icons" aria-label="Shortcuts">
+    ${desk("disk", "JK HD", "/")}
+    ${desk("mail", "Email", `mailto:${SITE.email}`)}
+    ${desk("doc", "Request PDF", `mailto:${SITE.email}?subject=Resume%20request`)}
+    ${desk("folder", "GitHub", SITE.github, true)}
+    ${desk("folder", "LinkedIn", SITE.linkedin, true)}
+  </ul>
+  ${win("w-skills", "Skills", skills, { cls: "a-skills", info: `${SITE.skills.length} skills &nbsp; scale 1–10` })}
+  ${win("w-certs", "Certifications", certs, { cls: "a-certs", info: `${SITE.certs.length} items &nbsp; all current` })}
+  ${win("w-jobs", "Experience", jobs, { cls: "a-jobs", info: `${SITE.experience.length} items` })}
+  ${win("w-scores", "CTF Results", scores, { cls: "a-scores", info: `${SITE.scores.length} items &nbsp; best first` })}
+  ${win("w-edu", "Education", edu, { cls: "a-edu" })}
 </main>
 <script>${RESUME_JS}</script>
 ${footer}`;

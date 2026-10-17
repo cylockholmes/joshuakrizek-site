@@ -1,202 +1,241 @@
-/* resume.html — green-screen terminal theme. Loaded after styles.css. */
-.term-page {
-  --room: #0a0d0b;
-  --plastic: #cfc8b6;
-  --plastic-lo: #a39b86;
-  --plastic-hi: #e6e0d0;
-  --glass: #03140a;
-  --p1: #5cff7a;          /* P1 phosphor */
-  --p1-dim: #2f9e48;
-  --p1-faint: #174d24;
-  --crt: "VT323", ui-monospace, Menlo, monospace;
+/* resume.html — 1-bit desktop, after the 1984 Mac. Loaded after styles.css. */
+.mac-page {
+  --ink: #000;
+  --paper: #fff;
+  --pixel: "Pixelify Sans", Geneva, Verdana, sans-serif;
+  --geneva: Geneva, Verdana, "DejaVu Sans", sans-serif;
+  /* Desktop pattern: 50% dither drawn with 2px pixels so it reads as a pattern, not gray. */
+  --dither-50: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2' shape-rendering='crispEdges'%3E%3Crect width='1' height='1'/%3E%3Crect x='1' y='1' width='1' height='1'/%3E%3C/svg%3E");
+  --dither-75: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2' shape-rendering='crispEdges'%3E%3Crect width='2' height='1'/%3E%3Crect y='1' width='1' height='1'/%3E%3C/svg%3E");
 
-  background: radial-gradient(900px 500px at 50% 20%, #141a16 0%, var(--room) 70%);
-  font-size: 22px;
+  background: var(--paper) var(--dither-50) 0 0 / 4px 4px;
+  image-rendering: pixelated;
+  color: var(--ink);
+  font-family: var(--geneva);
+  font-size: 15px;
+  line-height: 1.45;
 }
-.term-page .site-header nav a[href="/resume.html"] { color: var(--p1); }
-
+.mac-page a { color: var(--ink); }
+.mac-page :focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.px { display: block; flex: none; image-rendering: pixelated; }
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
-.term-wrap { max-width: 1040px; padding-top: 1.6rem; }
+/* ---- Menu bar (doubles as the site nav on this page) --------------------- */
+.menubar {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; flex-wrap: wrap; align-items: stretch;
+  background: var(--paper);
+  border-bottom: 2px solid var(--ink);
+  font-family: var(--pixel); font-size: 17px;
+  padding: 0 10px;
+}
+.menubar a { display: flex; align-items: center; gap: 8px; padding: 4px 12px; text-decoration: none; }
+.menubar a:hover, .menubar a[aria-current="page"] { background: var(--ink); color: var(--paper); }
+.menubar a:hover .px rect[fill="#000"] { fill: #fff; }
+.mb-logo { font-weight: 700; margin-right: 8px; }
 
-/* ---- The terminal: plastic bezel around curved glass -------------------- */
-.bezel {
+/* ---- Desktop layout ------------------------------------------------------- */
+.desktop {
+  max-width: 1200px; margin: 0 auto;
+  padding: 30px 20px 60px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 104px;
+  grid-template-areas:
+    "about  certs  icons"
+    "skills skills icons"
+    "jobs   scores icons"
+    "jobs   edu    icons";
+  gap: 30px 28px;
+  align-items: start;
+}
+.a-about  { grid-area: about; }
+.a-certs  { grid-area: certs; }
+.a-skills { grid-area: skills; }
+.a-jobs   { grid-area: jobs; }
+.a-scores { grid-area: scores; }
+.a-edu    { grid-area: edu; }
+.desk-icons { grid-area: icons; }
+
+/* ---- Windows ---------------------------------------------------------------- */
+.win {
   position: relative;
-  background: linear-gradient(180deg, var(--plastic-hi), var(--plastic) 30%, var(--plastic-lo));
-  border-radius: 26px 26px 18px 18px;
-  padding: 34px 34px 18px;
-  box-shadow:
-    inset 0 2px 0 rgba(255,255,255,.6),
-    inset 0 -4px 0 rgba(0,0,0,.18),
-    0 30px 60px rgba(0,0,0,.6);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
 }
-.glass {
+.titlebar {
   position: relative;
-  border-radius: 28px / 34px;          /* slightly barrel-shaped like a real tube */
-  background: radial-gradient(ellipse at 50% 45%, #0a2a14 0%, var(--glass) 65%, #010603 100%);
-  box-shadow:
-    inset 0 0 0 10px #1c1d1a,          /* the recess the tube sits in */
-    inset 0 0 70px rgba(0,0,0,.9),
-    0 0 0 3px var(--plastic-lo);
-  overflow: hidden;
+  height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-bottom: 2px solid var(--ink);
+  user-select: none;
 }
-/* Scanlines + a soft reflection across the tube face. */
-.glass::before, .glass::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; }
-.glass::before { background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0,0,0,.28) 2px 3px); z-index: 2; }
-.glass::after  { background: radial-gradient(ellipse 70% 40% at 30% 8%, rgba(255,255,255,.07), transparent 70%); z-index: 3; }
-
-.screen {
-  position: relative; z-index: 1;
-  padding: 36px 44px 40px;
-  color: var(--p1);
-  font-family: var(--crt);
-  line-height: 1.25;
-  text-shadow: 0 0 2px rgba(92,255,122,.9), 0 0 10px rgba(92,255,122,.45);
+/* The six racing stripes, inset from the frame like the original. */
+.titlebar::before {
+  content: ""; position: absolute; inset: 5px 4px;
+  background: repeating-linear-gradient(to bottom, var(--ink) 0 2px, transparent 2px 4px);
 }
-.screen p, .screen ul, .screen pre { margin: 0; }
-.screen a { color: var(--p1); text-decoration: underline; }
-.dim { color: var(--p1-dim); text-shadow: 0 0 6px rgba(47,158,72,.4); }
-.k { color: var(--p1); }
-.sys { color: var(--p1-dim); }
-
-.banner {
-  font-family: ui-monospace, Menlo, Consolas, monospace;   /* block glyphs need true fixed width */
-  font-size: clamp(7px, 1.9vw, 17px);
-  line-height: 1.02;
-  margin: 1.4rem 0 1.2rem !important;
-  color: var(--p1);
-  text-shadow: 0 0 4px rgba(92,255,122,.9), 0 0 18px rgba(92,255,122,.55);
-  overflow: hidden;
+.wtitle {
+  position: relative; margin: 0; padding: 0 12px;
+  background: var(--paper);
+  font-family: var(--pixel); font-size: 17px; font-weight: 700; line-height: 1;
 }
-.status-row { display: flex; flex-wrap: wrap; gap: .2rem 2rem; margin-bottom: .2rem !important; }
-.status-row span { color: var(--p1-dim); }
-.status-row b { font-weight: 400; color: var(--p1); }
-.blink-soft { animation: blink 1.6s steps(1) infinite; }
-
-/* Command lines: each section starts with one. */
-section { margin: 0; }
-.cmd { margin-top: 1.6rem !important; }
-.prompt { color: var(--p1-dim); }
-.out { list-style: none; padding: .4rem 0 0 !important; }
-
-/* type skills.dat */
-.skill { display: grid; grid-template-columns: 21ch auto 5ch 1fr; gap: 0 1.1rem; align-items: baseline; }
-.bar { white-space: pre; letter-spacing: 1px; color: var(--p1-dim); }
-.bar b { font-weight: 400; color: var(--p1); }
-.lv { color: var(--p1); }
-.tools { margin-top: .6rem !important; }
-
-/* dir \certs */
-.cert { display: grid; grid-template-columns: 8ch 5ch 1fr auto; gap: 0 1rem; }
-.cert .ext { color: var(--p1-dim); }
-
-/* history /jobs */
-.job { padding: .35rem 0 .7rem; border-left: 1px dashed var(--p1-faint); padding-left: 1.2rem; margin-left: .4rem; }
-.job + .job { border-top: 0; }
-.job-head .when { color: var(--p1-dim); }
-.job-role { color: var(--p1); }
-.job .dim { max-width: 70ch; }
-
-/* scores /ctf */
-.scores { border-collapse: collapse; width: 100%; }
-.scores th { font-weight: 400; text-align: left; color: var(--p1-dim); padding: 0 1.4rem .2rem 0; }
-.scores td { padding: 0 1.4rem 0 0; vertical-align: baseline; }
-.scores td:first-child { width: 6ch; }
-.scores td:nth-child(2) { width: 9ch; white-space: nowrap; }
-.scores tbody tr:first-child td { text-shadow: 0 0 3px #5cff7a, 0 0 16px rgba(92,255,122,.8); }
-
-/* type educ.txt */
-.edu { display: grid; grid-template-columns: 1fr auto; gap: 0 1.2rem; }
-
-.cursor { animation: blink 1s steps(1) infinite; }
-.last { margin-top: 1.2rem !important; }
-
-/* ---- Bezel chin: power LED + real keycaps -------------------------------- */
-.oia {
-  display: flex; flex-wrap: wrap; align-items: center; gap: .7rem;
-  padding: 16px 6px 0;
-  font-family: var(--crt);
+.shade {
+  position: absolute; left: 12px; top: 5px; z-index: 1;
+  width: 18px; height: 18px; padding: 0;
+  background: var(--paper); border: 2px solid var(--ink);
+  box-shadow: 0 0 0 3px var(--paper);
+  cursor: pointer;
 }
-.oia-ready {
-  margin-right: auto;
-  color: #3d3a31; font-size: 20px; letter-spacing: 2px;
-  display: inline-flex; align-items: center; gap: .55rem;
-}
-.oia-ready::before {
-  content: ""; width: 10px; height: 10px; border-radius: 50%;
-  background: var(--p1); box-shadow: 0 0 8px var(--p1), 0 0 2px #fff inset;
-}
-.oia a, .oia button {
-  font: inherit; font-size: 20px; color: #3d3a31; text-decoration: none;
-  display: inline-flex; align-items: center; gap: .45rem;
-  background: none; border: 0; padding: 0; cursor: pointer;
-}
-.oia kbd {
-  font-family: var(--crt); font-size: 20px; color: #2b2922;
-  min-width: 2.1em; padding: .1em .45em; text-align: center;
-  background: linear-gradient(180deg, #f2ecdc, #d6cfbd);
-  border: 1px solid #8f8873; border-radius: 5px;
-  box-shadow: 0 3px 0 #8f8873, 0 4px 6px rgba(0,0,0,.25);
-}
-.oia a:hover kbd, .oia button:hover kbd { background: #fffaea; }
-.oia a:active kbd, .oia button:active kbd { transform: translateY(2px); box-shadow: 0 1px 0 #8f8873; }
-.oia a:focus-visible, .oia button:focus-visible, .skip:focus-visible { outline: 3px solid #1b6b2d; outline-offset: 4px; border-radius: 6px; }
+.shade:active { background: var(--ink); }
+.win.collapsed .wbody { display: none; }
+.win.collapsed .titlebar { border-bottom: 0; }
 
-.skip {
-  position: absolute; top: 8px; right: 34px;
-  font-family: var(--crt); font-size: 16px; color: #4b4739;
-  background: none; border: 0; cursor: pointer; letter-spacing: 1px;
-  display: none;
+.wbody > * { margin: 16px 18px; }
+.wbody > .info {
+  margin: 0; padding: 4px 14px;
+  border-bottom: 4px double var(--ink);
+  font-size: 13px; word-spacing: 2px;
 }
 
-/* ---- Boot sequence (resume.js) ------------------------------------------- */
-/* Unprinted lines take no space, so the screen grows as it prints. */
-.booting .screen .ln:not(.on) { display: none; }
-.booting .screen { min-height: 70vh; }
-.booting .skip { display: block; }
+/* About This Operator */
+.about { display: flex; gap: 24px; align-items: center; }
+.about p { margin: .2rem 0 .5rem; max-width: 46ch; }
+.name {
+  font-family: var(--pixel); font-weight: 700;
+  font-size: clamp(36px, 4.4vw, 56px); line-height: .95;
+  margin: 0 0 .5rem; letter-spacing: -1px;
+}
+.role { font-weight: 700; }
+.btns { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 14px; }
+.mbtn {
+  font-family: var(--pixel); font-size: 16px;
+  padding: 4px 16px;
+  border: 2px solid var(--ink); border-radius: 9px;
+  background: var(--paper); text-decoration: none;
+}
+.mbtn.default { outline: 3px solid var(--ink); outline-offset: 2px; border-radius: 9px; }
+.mbtn:hover, .mbtn:active { background: var(--ink); color: var(--paper); }
 
-/* ---- Small screens -------------------------------------------------------- */
-@media (max-width: 720px) {
-  .term-page { font-size: 19px; }
-  .bezel { padding: 16px 12px 14px; border-radius: 18px; }
-  .glass { border-radius: 16px / 20px; }
-  .screen { padding: 22px 16px 26px; }
-  .skill { grid-template-columns: auto 1fr; }
-  .skill .k, .skill .dim { grid-column: 1 / -1; }
-  .skill .dim { margin-bottom: .35rem; }
-  .cert { grid-template-columns: 8ch 1fr; }
-  .cert .ext { display: none; }
-  .cert .dim { grid-column: 2; }
-  .edu { grid-template-columns: 1fr; margin-bottom: .3rem; }
-  .scores td, .scores th { padding-right: .7rem; }
-  .scores td:nth-child(2) { white-space: normal; width: 6ch; }
-  .skip { right: 14px; top: 0; }
+/* Skills: MacPaint-style bar chart, denser fill = stronger skill */
+.chart { list-style: none; padding: 0; display: grid; gap: 14px; }
+.chart li { display: grid; grid-template-columns: 13.5rem 1fr; gap: 2px 18px; align-items: center; }
+.sk { font-weight: 700; }
+.track { position: relative; height: 22px; border: 2px solid var(--ink); background: var(--paper); }
+/* Tick marks at every level. */
+.track::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(to right, transparent 0 calc(10% - 1px), rgba(0,0,0,.35) calc(10% - 1px) 10%);
+}
+.bar { display: block; height: 100%; border-right: 2px solid var(--ink); }
+.bar.solid   { background: var(--ink); }
+.bar.dense   { background: var(--paper) var(--dither-75) 0 0 / 4px 4px; }
+.bar.stripe  { background: repeating-linear-gradient(-45deg, var(--ink) 0 2px, var(--paper) 2px 6px); }
+.bar.checker { background: var(--paper) var(--dither-50) 0 0 / 4px 4px; }
+.proof { grid-column: 2; font-size: 13px; }
+.tools { font-size: 14px; border-top: 2px solid var(--ink); padding-top: 12px; }
+.tools strong { font-family: var(--pixel); margin-right: 6px; }
+
+/* Certifications: Finder icon view */
+.icons {
+  list-style: none; padding: 0;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 12px;
+  text-align: center;
+}
+.icons li { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.icons strong { font-family: var(--pixel); font-size: 16px; margin-top: 6px; }
+.icons span { font-size: 12px; line-height: 1.3; }
+.icons .note { font-style: italic; }
+
+/* Experience + CTF results: Finder list view */
+.list { width: calc(100% - 36px); border-collapse: collapse; font-size: 14px; }
+.list th {
+  text-align: left; font-weight: 400;
+  font-family: var(--pixel); font-size: 15px;
+  border-bottom: 2px solid var(--ink); padding: 2px 8px 4px;
+}
+.list td { padding: 6px 8px 2px; vertical-align: top; }
+.list .when { white-space: nowrap; }
+.wbody > .list-h {
+  margin: 0; padding: 4px 18px;
+  display: flex; justify-content: space-between;
+  font-family: var(--pixel); font-size: 15px; border-bottom: 2px solid var(--ink);
+}
+.jobs { list-style: none; padding: 0; }
+.job { padding: 10px 0 12px; border-bottom: 1px solid var(--ink); }
+.job:first-child { padding-top: 0; }
+.job:last-child { border-bottom: 0; padding-bottom: 0; }
+.job p { margin: 0; }
+.job-h { display: flex; align-items: center; gap: 8px; }
+.job-h strong { flex: 1; }
+.job-h .when { font-size: 13px; white-space: nowrap; }
+.org, .desc { padding-left: 24px; }
+.org { font-style: italic; }
+.desc { font-size: 13px; margin-top: 2px !important; }
+.job.sel strong { background: var(--ink); color: var(--paper); padding: 0 4px; flex: 0 1 auto; margin-right: auto; }
+.scores td { border-bottom: 1px solid var(--ink); padding-bottom: 6px; }
+.scores tr:last-child td { border-bottom: 0; }
+.scores .rank { font-family: var(--pixel); font-size: 16px; white-space: nowrap; }
+.scores .sub { display: block; font-size: 12px; }
+.scores tr.sel td { background: var(--ink); color: var(--paper); }
+
+/* Education */
+.edu { list-style: none; padding: 0; display: grid; gap: 12px; }
+.edu li { display: flex; gap: 10px; align-items: flex-start; }
+.edu strong, .edu span { display: block; }
+.edu span { font-size: 13px; }
+
+/* Desktop shortcuts */
+.desk-icons { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 22px; align-items: center; }
+.desk-icons a { display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; }
+.desk-icons span { background: var(--paper); padding: 0 5px; font-size: 13px; white-space: nowrap; }
+.desk-icons a:hover span, .desk-icons a:focus-visible span { background: var(--ink); color: var(--paper); }
+.desk-icons a:hover .px, .desk-icons a:focus-visible .px { filter: invert(1); }
+
+/* Dragging (wide screens only, see resume.js) */
+.draggable .titlebar { cursor: grab; }
+.win.dragging { cursor: grabbing; box-shadow: 6px 6px 0 var(--ink); }
+
+/* Footer sits on a plain white strip so it stays legible over the pattern. */
+.mac-page .site-footer {
+  max-width: none; background: var(--paper); color: var(--ink);
+  border-top: 2px solid var(--ink); padding: 1.2rem 1.25rem 1.6rem; font-size: 13px;
+}
+.mac-page .site-footer p { max-width: 1160px; margin: .3rem auto; }
+.mac-page .site-footer a, .mac-page .muted { color: var(--ink); }
+
+/* ---- Narrow screens: windows stack, shortcuts become a row ---------------- */
+@media (max-width: 960px) {
+  .desktop { grid-template-columns: minmax(0, 1fr); grid-template-areas: none; gap: 26px; padding: 22px 16px 44px; }
+  .desktop > * { grid-area: auto; }
+  .desk-icons { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 16px 22px; }
+}
+@media (max-width: 560px) {
+  .menubar { font-size: 15px; padding: 0 4px; }
+  .menubar a { padding: 4px 8px; }
+  .mb-logo span { display: none; }
+  .about { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .about .px { width: 64px; height: 60px; }
+  .chart li { grid-template-columns: 1fr; }
+  .proof { grid-column: 1; }
+  .icons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .list { width: calc(100% - 24px); }
+  .job-h { flex-wrap: wrap; }
+  .job-h .when { flex-basis: 100%; padding-left: 24px; }
+  .wbody > * { margin: 14px 12px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .cursor, .blink-soft { animation: none; }
-}
-
-/* ---- Print: a clean black-on-white resume -------------------------------- */
+/* ---- Print: plain sections, no desktop -------------------------------------- */
 @media print {
-  .term-page { background: #fff; font-size: 12pt; }
-  .site-header, .site-footer, .oia, .skip, .sys, .last, .cmd, .banner { display: none !important; }
-  /* Print the real section headings instead of the fake commands. */
-  .sr-only { position: static; width: auto; height: auto; margin: 12pt 0 4pt; clip: auto; overflow: visible; font-family: var(--crt); font-size: 16pt; font-weight: 400; }
-  h1.sr-only { font-size: 26pt; margin-top: 0; }
-  .term-wrap { padding: 0; max-width: none; }
-  .bezel, .glass { background: none; box-shadow: none; padding: 0; border-radius: 0; }
-  .glass::before, .glass::after { display: none; }
-  .screen { padding: 0; color: #000; text-shadow: none; }
-  .screen *, .dim, .k, .bar b, .lv { color: #000 !important; text-shadow: none !important; }
-  .dim { color: #444 !important; }
-  .booting .screen .ln { display: revert; }
-  .job, .scores tr { break-inside: avoid; }
+  .mac-page { background: #fff; }
+  .menubar, .desk-icons, .shade, .site-footer { display: none !important; }
+  .desktop { display: block; padding: 0; }
+  .win { border: 0; box-shadow: none; margin-bottom: 14pt; break-inside: avoid; translate: none !important; }
+  .titlebar { justify-content: flex-start; border-bottom: 2px solid #000; height: auto; }
+  .titlebar::before { display: none; }
+  .wtitle { padding: 0; }
+  .win.collapsed .wbody { display: block; }
 }
-
-/* contact */
-.contact { display: grid; grid-template-columns: 10ch 1fr; }
-.contact a { overflow-wrap: anywhere; }
