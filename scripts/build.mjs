@@ -276,6 +276,28 @@ function blocksToHtml(blocks) {
           b.to_do.checked ? "checked" : ""
         }/> ${richText(b.to_do.rich_text)}</p>\n`;
         break;
+      case "table": {
+        // Rows arrive as table_row children (fetched by fetchBlocks).
+        const { has_column_header: colHead, has_row_header: rowHead } = b.table;
+        let rows = (b.children || []).filter((r) => r.type === "table_row");
+        // An all-blank header row (key/value tables) is dropped, not rendered.
+        const blankHead = colHead && rows[0]?.table_row.cells.every((c) => !plain(c).trim());
+        if (blankHead) rows = rows.slice(1);
+        const row = (r, header) =>
+          `<tr>${r.table_row.cells
+            .map((cell, i) => {
+              const tag = header || (rowHead && i === 0) ? "th" : "td";
+              const scope = header ? ' scope="col"' : tag === "th" ? ' scope="row"' : "";
+              return `<${tag}${scope}>${richText(cell)}</${tag}>`;
+            })
+            .join("")}</tr>`;
+        const headRow = colHead && !blankHead && rows.length ? rows[0] : null;
+        const bodyRows = headRow ? rows.slice(1) : rows;
+        html += `<div class="table-wrap"><table>${
+          headRow ? `<thead>${row(headRow, true)}</thead>` : ""
+        }<tbody>${bodyRows.map((r) => row(r, false)).join("")}</tbody></table></div>\n`;
+        break;
+      }
       case "column_list":
         html += `<div class="columns">${(b.children || [])
           .map((col) => `<div class="col">${blocksToHtml(col.children || [])}</div>`)
