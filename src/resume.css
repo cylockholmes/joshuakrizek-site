@@ -1,241 +1,67 @@
-/* resume.html — 1-bit desktop, after the 1984 Mac. Loaded after styles.css. */
-.mac-page {
-  --ink: #000;
-  --paper: #fff;
-  --pixel: "Pixelify Sans", Geneva, Verdana, sans-serif;
-  --geneva: Geneva, Verdana, "DejaVu Sans", sans-serif;
-  /* Desktop pattern: 50% dither drawn with 2px pixels so it reads as a pattern, not gray. */
-  --dither-50: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2' shape-rendering='crispEdges'%3E%3Crect width='1' height='1'/%3E%3Crect x='1' y='1' width='1' height='1'/%3E%3C/svg%3E");
-  --dither-75: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2' shape-rendering='crispEdges'%3E%3Crect width='2' height='1'/%3E%3Crect y='1' width='1' height='1'/%3E%3C/svg%3E");
+/* resume.html — resume-only pieces on top of styles.css. Uses the site tokens only. */
+.site-header nav a[aria-current="page"] { color: var(--accent); }
+.resume section { scroll-margin-top: 1rem; }
+.resume .hero h1 { font-size: clamp(2rem, 5.5vw, 2.8rem); }
+.resume .hero .open-to { margin-top: .4rem; }
 
-  background: var(--paper) var(--dither-50) 0 0 / 4px 4px;
-  image-rendering: pixelated;
-  color: var(--ink);
-  font-family: var(--geneva);
-  font-size: 15px;
-  line-height: 1.45;
+/* Skills: name, ten-cell meter, proof */
+.skills { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); }
+.skills li {
+  display: grid; grid-template-columns: 13rem auto 1fr; gap: .4rem 1.2rem; align-items: center;
+  padding: .7rem 1.1rem; border-bottom: 1px solid var(--border);
 }
-.mac-page a { color: var(--ink); }
-.mac-page :focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-.px { display: block; flex: none; image-rendering: pixelated; }
-.sr-only {
-  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
-}
+.skills li:last-child { border-bottom: 0; }
+.skills .sk { font-family: var(--mono); font-size: .95rem; color: var(--text); }
+.skills .proof { color: var(--muted); font-size: .88rem; }
+.meter { display: inline-flex; gap: 3px; }
+.meter i { width: 14px; height: 14px; border: 1px solid var(--border); border-radius: 2px; background: var(--bg-soft); }
+.meter i.on { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 6px rgba(57, 255, 20, .35); }
+.tools { margin-top: 1rem; }
 
-/* ---- Menu bar (doubles as the site nav on this page) --------------------- */
-.menubar {
-  position: sticky; top: 0; z-index: 100;
-  display: flex; flex-wrap: wrap; align-items: stretch;
-  background: var(--paper);
-  border-bottom: 2px solid var(--ink);
-  font-family: var(--pixel); font-size: 17px;
-  padding: 0 10px;
-}
-.menubar a { display: flex; align-items: center; gap: 8px; padding: 4px 12px; text-decoration: none; }
-.menubar a:hover, .menubar a[aria-current="page"] { background: var(--ink); color: var(--paper); }
-.menubar a:hover .px rect[fill="#000"] { fill: #fff; }
-.mb-logo { font-weight: 700; margin-right: 8px; }
+/* CTF results: reuse the post table look */
+.scores { border-collapse: collapse; width: 100%; font-size: .95rem; }
+.scores th, .scores td { padding: .6rem .9rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+.scores tbody tr:last-child td { border-bottom: 0; }
+.scores thead th { font-family: var(--mono); font-size: .8rem; letter-spacing: 1px; color: var(--muted); background: var(--bg-soft); font-weight: 400; }
+.scores .rank { font-family: var(--mono); font-weight: 700; color: var(--accent-2); white-space: nowrap; width: 4.5rem; }
+.scores tr.win .rank { color: var(--accent); }
+.scores .sub { display: block; color: var(--muted); font-size: .84rem; margin-top: .1rem; }
+.scores .field { color: var(--muted); font-family: var(--mono); font-size: .85rem; white-space: nowrap; }
 
-/* ---- Desktop layout ------------------------------------------------------- */
-.desktop {
-  max-width: 1200px; margin: 0 auto;
-  padding: 30px 20px 60px;
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 104px;
-  grid-template-areas:
-    "about  certs  icons"
-    "skills skills icons"
-    "jobs   scores icons"
-    "jobs   edu    icons";
-  gap: 30px 28px;
-  align-items: start;
+/* Experience: a dated sequence, so a timeline rail */
+.timeline { list-style: none; margin: 0; padding: 0 0 0 1.2rem; border-left: 1px solid var(--border); }
+.timeline li { position: relative; padding: 0 0 1.4rem .4rem; }
+.timeline li:last-child { padding-bottom: 0; }
+.timeline li::before {
+  content: ""; position: absolute; left: calc(-1.2rem - 5px); top: .55rem;
+  width: 9px; height: 9px; border-radius: 50%; background: var(--bg); border: 1px solid var(--accent);
 }
-.a-about  { grid-area: about; }
-.a-certs  { grid-area: certs; }
-.a-skills { grid-area: skills; }
-.a-jobs   { grid-area: jobs; }
-.a-scores { grid-area: scores; }
-.a-edu    { grid-area: edu; }
-.desk-icons { grid-area: icons; }
+.timeline li:first-child::before { background: var(--accent); }
+.timeline h3 { margin: 0; font-family: var(--mono); font-size: 1.05rem; color: var(--text); }
+.timeline .org { margin: .1rem 0 .35rem; color: var(--accent-2); font-size: .92rem; }
+.timeline .when { color: var(--muted); font-family: var(--mono); font-size: .82rem; margin-left: .4rem; }
+.timeline .desc { margin: 0; color: var(--muted); font-size: .95rem; max-width: 68ch; }
 
-/* ---- Windows ---------------------------------------------------------------- */
-.win {
-  position: relative;
-  background: var(--paper);
-  border: 2px solid var(--ink);
-  box-shadow: 4px 4px 0 var(--ink);
-}
-.titlebar {
-  position: relative;
-  height: 28px;
-  display: flex; align-items: center; justify-content: center;
-  border-bottom: 2px solid var(--ink);
-  user-select: none;
-}
-/* The six racing stripes, inset from the frame like the original. */
-.titlebar::before {
-  content: ""; position: absolute; inset: 5px 4px;
-  background: repeating-linear-gradient(to bottom, var(--ink) 0 2px, transparent 2px 4px);
-}
-.wtitle {
-  position: relative; margin: 0; padding: 0 12px;
-  background: var(--paper);
-  font-family: var(--pixel); font-size: 17px; font-weight: 700; line-height: 1;
-}
-.shade {
-  position: absolute; left: 12px; top: 5px; z-index: 1;
-  width: 18px; height: 18px; padding: 0;
-  background: var(--paper); border: 2px solid var(--ink);
-  box-shadow: 0 0 0 3px var(--paper);
-  cursor: pointer;
-}
-.shade:active { background: var(--ink); }
-.win.collapsed .wbody { display: none; }
-.win.collapsed .titlebar { border-bottom: 0; }
-
-.wbody > * { margin: 16px 18px; }
-.wbody > .info {
-  margin: 0; padding: 4px 14px;
-  border-bottom: 4px double var(--ink);
-  font-size: 13px; word-spacing: 2px;
-}
-
-/* About This Operator */
-.about { display: flex; gap: 24px; align-items: center; }
-.about p { margin: .2rem 0 .5rem; max-width: 46ch; }
-.name {
-  font-family: var(--pixel); font-weight: 700;
-  font-size: clamp(36px, 4.4vw, 56px); line-height: .95;
-  margin: 0 0 .5rem; letter-spacing: -1px;
-}
-.role { font-weight: 700; }
-.btns { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 14px; }
-.mbtn {
-  font-family: var(--pixel); font-size: 16px;
-  padding: 4px 16px;
-  border: 2px solid var(--ink); border-radius: 9px;
-  background: var(--paper); text-decoration: none;
-}
-.mbtn.default { outline: 3px solid var(--ink); outline-offset: 2px; border-radius: 9px; }
-.mbtn:hover, .mbtn:active { background: var(--ink); color: var(--paper); }
-
-/* Skills: MacPaint-style bar chart, denser fill = stronger skill */
-.chart { list-style: none; padding: 0; display: grid; gap: 14px; }
-.chart li { display: grid; grid-template-columns: 13.5rem 1fr; gap: 2px 18px; align-items: center; }
-.sk { font-weight: 700; }
-.track { position: relative; height: 22px; border: 2px solid var(--ink); background: var(--paper); }
-/* Tick marks at every level. */
-.track::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: repeating-linear-gradient(to right, transparent 0 calc(10% - 1px), rgba(0,0,0,.35) calc(10% - 1px) 10%);
-}
-.bar { display: block; height: 100%; border-right: 2px solid var(--ink); }
-.bar.solid   { background: var(--ink); }
-.bar.dense   { background: var(--paper) var(--dither-75) 0 0 / 4px 4px; }
-.bar.stripe  { background: repeating-linear-gradient(-45deg, var(--ink) 0 2px, var(--paper) 2px 6px); }
-.bar.checker { background: var(--paper) var(--dither-50) 0 0 / 4px 4px; }
-.proof { grid-column: 2; font-size: 13px; }
-.tools { font-size: 14px; border-top: 2px solid var(--ink); padding-top: 12px; }
-.tools strong { font-family: var(--pixel); margin-right: 6px; }
-
-/* Certifications: Finder icon view */
-.icons {
-  list-style: none; padding: 0;
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 12px;
-  text-align: center;
-}
-.icons li { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.icons strong { font-family: var(--pixel); font-size: 16px; margin-top: 6px; }
-.icons span { font-size: 12px; line-height: 1.3; }
-.icons .note { font-style: italic; }
-
-/* Experience + CTF results: Finder list view */
-.list { width: calc(100% - 36px); border-collapse: collapse; font-size: 14px; }
-.list th {
-  text-align: left; font-weight: 400;
-  font-family: var(--pixel); font-size: 15px;
-  border-bottom: 2px solid var(--ink); padding: 2px 8px 4px;
-}
-.list td { padding: 6px 8px 2px; vertical-align: top; }
-.list .when { white-space: nowrap; }
-.wbody > .list-h {
-  margin: 0; padding: 4px 18px;
-  display: flex; justify-content: space-between;
-  font-family: var(--pixel); font-size: 15px; border-bottom: 2px solid var(--ink);
-}
-.jobs { list-style: none; padding: 0; }
-.job { padding: 10px 0 12px; border-bottom: 1px solid var(--ink); }
-.job:first-child { padding-top: 0; }
-.job:last-child { border-bottom: 0; padding-bottom: 0; }
-.job p { margin: 0; }
-.job-h { display: flex; align-items: center; gap: 8px; }
-.job-h strong { flex: 1; }
-.job-h .when { font-size: 13px; white-space: nowrap; }
-.org, .desc { padding-left: 24px; }
-.org { font-style: italic; }
-.desc { font-size: 13px; margin-top: 2px !important; }
-.job.sel strong { background: var(--ink); color: var(--paper); padding: 0 4px; flex: 0 1 auto; margin-right: auto; }
-.scores td { border-bottom: 1px solid var(--ink); padding-bottom: 6px; }
-.scores tr:last-child td { border-bottom: 0; }
-.scores .rank { font-family: var(--pixel); font-size: 16px; white-space: nowrap; }
-.scores .sub { display: block; font-size: 12px; }
-.scores tr.sel td { background: var(--ink); color: var(--paper); }
+/* Certifications */
+.cert-grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.cert { padding: 1rem 1.1rem; }
+.cert:hover { transform: none; }
+.cert h3 { color: var(--accent); }
+.cert p { margin: 0; font-size: .92rem; }
+.cert .date { margin-top: .35rem; }
 
 /* Education */
-.edu { list-style: none; padding: 0; display: grid; gap: 12px; }
-.edu li { display: flex; gap: 10px; align-items: flex-start; }
-.edu strong, .edu span { display: block; }
-.edu span { font-size: 13px; }
+.edu { list-style: none; margin: 0; padding: 0; }
+.edu li { padding: .55rem 0; border-bottom: 1px dashed var(--border); }
+.edu li:last-child { border-bottom: 0; }
+.edu strong { display: block; font-weight: 600; }
+.edu span { color: var(--muted); font-size: .9rem; }
 
-/* Desktop shortcuts */
-.desk-icons { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 22px; align-items: center; }
-.desk-icons a { display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; }
-.desk-icons span { background: var(--paper); padding: 0 5px; font-size: 13px; white-space: nowrap; }
-.desk-icons a:hover span, .desk-icons a:focus-visible span { background: var(--ink); color: var(--paper); }
-.desk-icons a:hover .px, .desk-icons a:focus-visible .px { filter: invert(1); }
-
-/* Dragging (wide screens only, see resume.js) */
-.draggable .titlebar { cursor: grab; }
-.win.dragging { cursor: grabbing; box-shadow: 6px 6px 0 var(--ink); }
-
-/* Footer sits on a plain white strip so it stays legible over the pattern. */
-.mac-page .site-footer {
-  max-width: none; background: var(--paper); color: var(--ink);
-  border-top: 2px solid var(--ink); padding: 1.2rem 1.25rem 1.6rem; font-size: 13px;
+@media (max-width: 720px) {
+  .skills li { grid-template-columns: 1fr; }
+  .meter i { width: 12px; height: 12px; }
 }
-.mac-page .site-footer p { max-width: 1160px; margin: .3rem auto; }
-.mac-page .site-footer a, .mac-page .muted { color: var(--ink); }
-
-/* ---- Narrow screens: windows stack, shortcuts become a row ---------------- */
-@media (max-width: 960px) {
-  .desktop { grid-template-columns: minmax(0, 1fr); grid-template-areas: none; gap: 26px; padding: 22px 16px 44px; }
-  .desktop > * { grid-area: auto; }
-  .desk-icons { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 16px 22px; }
-}
-@media (max-width: 560px) {
-  .menubar { font-size: 15px; padding: 0 4px; }
-  .menubar a { padding: 4px 8px; }
-  .mb-logo span { display: none; }
-  .about { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .about .px { width: 64px; height: 60px; }
-  .chart li { grid-template-columns: 1fr; }
-  .proof { grid-column: 1; }
-  .icons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .list { width: calc(100% - 24px); }
-  .job-h { flex-wrap: wrap; }
-  .job-h .when { flex-basis: 100%; padding-left: 24px; }
-  .wbody > * { margin: 14px 12px; }
-}
-
-/* ---- Print: plain sections, no desktop -------------------------------------- */
-@media print {
-  .mac-page { background: #fff; }
-  .menubar, .desk-icons, .shade, .site-footer { display: none !important; }
-  .desktop { display: block; padding: 0; }
-  .win { border: 0; box-shadow: none; margin-bottom: 14pt; break-inside: avoid; translate: none !important; }
-  .titlebar { justify-content: flex-start; border-bottom: 2px solid #000; height: auto; }
-  .titlebar::before { display: none; }
-  .wtitle { padding: 0; }
-  .win.collapsed .wbody { display: block; }
+@media (max-width: 480px) {
+  .scores th, .scores td { padding: .5rem .6rem; }
+  .scores .field { white-space: normal; }
 }
