@@ -18,6 +18,9 @@ const NOTION_TOKEN = process.env.NOTION_TOKEN;
 const DATABASE_ID =
   process.env.NOTION_DATABASE_ID || "ee5c13ef-3b7a-4ccb-a28e-9acb92898e3a";
 
+// Public GIAC directory entry; verifies GWAPT, GCIH and GSEC with dates.
+const GIAC_VERIFY = "https://www.giac.org/certified-professional/Joshua-Krizek/201200";
+
 const SITE = {
   name: "Joshua Krizek",
   url: "https://joshuakrizek.com",
@@ -29,11 +32,18 @@ const SITE = {
   email: "hello@joshuakrizek.com",
   github: "https://github.com/cylockholmes/",
   linkedin: "https://www.linkedin.com/in/joshua-krizek/",
+  // Bug bounty platform profiles and credential verification.
+  profiles: [
+    { name: "HackerOne", url: "https://hackerone.com/cylockholmes", desc: "Bug bounty profile" },
+    { name: "Bugcrowd", url: "https://bugcrowd.com/h/cylockholmes", desc: "Bug bounty profile" },
+    { name: "Intigriti", url: "https://app.intigriti.com/profile/cylockholmes", desc: "Bug bounty profile" },
+    { name: "GIAC", url: GIAC_VERIFY, desc: "Verify GWAPT, GCIH and GSEC" },
+  ],
   certs: [
     { code: "PNPT", name: "Practical Network Penetration Tester", note: "TCM Security · 2026" },
-    { code: "GWAPT", name: "GIAC Web Application Penetration Tester", note: "Active through 2030" },
-    { code: "GCIH", name: "GIAC Certified Incident Handler", note: "Active through 2030" },
-    { code: "GSEC", name: "GIAC Security Essentials", note: "Active through 2029" },
+    { code: "GWAPT", name: "GIAC Web Application Penetration Tester", note: "Active through 2030", verify: GIAC_VERIFY },
+    { code: "GCIH", name: "GIAC Certified Incident Handler", note: "Active through 2030", verify: GIAC_VERIFY },
+    { code: "GSEC", name: "GIAC Security Essentials", note: "Active through 2029", verify: GIAC_VERIFY },
     { code: "Sec+", name: "CompTIA Security+", note: "2026" },
     { code: "eJPT", name: "eLearnSecurity Junior Penetration Tester", note: "2021" },
   ],
@@ -322,7 +332,11 @@ const person = () => ({
   jobTitle: "Penetration Tester",
   url: SITE.url,
   email: `mailto:${SITE.email}`,
-  sameAs: [SITE.github.replace(/\/$/, ""), SITE.linkedin.replace(/\/$/, "")],
+  sameAs: [
+    SITE.github.replace(/\/$/, ""),
+    SITE.linkedin.replace(/\/$/, ""),
+    ...SITE.profiles.map((p) => p.url),
+  ],
   alumniOf: SITE.education.map((e) => ({ "@type": "EducationalOrganization", name: e.school })),
   knowsAbout: ["Penetration testing", "Web application security", "Active Directory", "Bug bounty"],
 });
@@ -387,6 +401,7 @@ const footer = `<footer class="site-footer">
   <p><a href="mailto:${SITE.email}">${SITE.email}</a> ·
      <a href="${SITE.github}" rel="noopener">GitHub</a> ·
      <a href="${SITE.linkedin}" rel="noopener">LinkedIn</a></p>
+  <p>${SITE.profiles.map((p) => `<a href="${esc(p.url)}" rel="noopener">${esc(p.name)}</a>`).join(" · ")}</p>
   <p class="muted">Content managed in Notion · rebuilt automatically on every change.</p>
 </footer>
 </body></html>`;
@@ -536,7 +551,12 @@ ${header}
 
     <h2>Certifications</h2>
     <ul>
-      ${SITE.certs.map((c) => `<li>${esc(c.code)} — ${esc(c.name)} (${esc(c.note)})</li>`).join("\n      ")}
+      ${SITE.certs.map((c) => `<li>${esc(c.code)} — ${esc(c.name)} (${esc(c.note)}${c.verify ? `, <a href="${esc(c.verify)}" rel="noopener">verify</a>` : ""})</li>`).join("\n      ")}
+    </ul>
+
+    <h2>Bug bounty &amp; verification</h2>
+    <ul>
+      ${SITE.profiles.map((p) => `<li><a href="${esc(p.url)}" rel="noopener">${esc(p.name)}</a> — ${esc(p.desc)}</li>`).join("\n      ")}
     </ul>
 
     <h2>Education</h2>
@@ -583,7 +603,7 @@ function resumePage() {
           (c) => `<article class="card cert">
         <h3>${esc(c.code)}</h3>
         <p>${esc(c.name)}</p>
-        <p class="date">${esc(c.note)}</p>
+        <p class="date">${esc(c.note)}${c.verify ? ` · <a href="${esc(c.verify)}" rel="noopener">verify</a>` : ""}</p>
       </article>`
         )
         .join("\n      ")}
@@ -665,6 +685,22 @@ ${header.replace('<a href="/resume.html">', '<a href="/resume.html" aria-current
   <section id="education">
     <h2 class="section-title">Education</h2>
     ${edu}
+  </section>
+
+  <section id="profiles">
+    <h2 class="section-title">Bug bounty &amp; verification</h2>
+    <div class="grid">
+      ${SITE.profiles
+        .map(
+          (p) => `<article class="card">
+        <a class="card-link" href="${esc(p.url)}" rel="noopener">
+          <h3>${esc(p.name)}</h3>
+          <p class="excerpt">${esc(p.desc)}</p>
+        </a>
+      </article>`
+        )
+        .join("\n      ")}
+    </div>
   </section>
 </main>
 ${footer}`;
